@@ -1,0 +1,330 @@
+{
+  "source": "optra360-zoptro-brand-expression-system-guidelines.pdf",
+  "version": "Update 7",
+  "method": "Existing PDF vector path coordinates transformed to SVG; no tracing, redrawing, reconstruction or text replacement.",
+  "wordmark": "Page 3 Form /Fm5 (PDF object 462), including TM. The page applies 15% display opacity. Original asset preserves opaque black source Form; blue/ivory variants use exact primary palette values from page 8. 72 PDF-unit clear space exceeds 2x of the P vertical stem (35.47).",
+  "favicon": "Page 4 approved blue circle / ivory Z digital adaptation; geometry and color preserved.",
+  "icons": "Page 31 approved filled icon sheet. currentColor enables approved foreground/background combinations from page 38.",
+  "assets": [
+    {
+      "file": "zoptro-wordmark-original.svg",
+      "viewBox": [
+        824.0821000000001,
+        269.039
+      ],
+      "sourceBounds": [
+        1038.9179,
+        243.783,
+        1719,
+        368.822
+      ],
+      "padding": 72,
+      "pathCount": 6,
+      "fillOverride": null
+    },
+    {
+      "file": "zoptro-wordmark-blue.svg",
+      "viewBox": [
+        824.0821000000001,
+        269.039
+      ],
+      "sourceBounds": [
+        1038.9179,
+        243.783,
+        1719,
+        368.822
+      ],
+      "padding": 72,
+      "pathCount": 6,
+      "fillOverride": "#09293D"
+    },
+    {
+      "file": "zoptro-wordmark-ivory.svg",
+      "viewBox": [
+        824.0821000000001,
+        269.039
+      ],
+      "sourceBounds": [
+        1038.9179,
+        243.783,
+        1719,
+        368.822
+      ],
+      "padding": 72,
+      "pathCount": 6,
+      "fillOverride": "#F4F2EA"
+    },
+    {
+      "file": "zoptro-favicon.svg",
+      "viewBox": [
+        200,
+        200.0
+      ],
+      "sourceBounds": [
+        1308,
+        319.9254,
+        1496,
+        507.9254
+      ],
+      "padding": 6,
+      "pathCount": 2,
+      "fillOverride": null
+    },
+    {
+      "file": "icon-add.svg",
+      "viewBox": [
+        88.5,
+        88.5
+      ],
+      "sourceBounds": [
+        172.80540000000002,
+        900.1322,
+        261.3054,
+        988.6322
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-assist.svg",
+      "viewBox": [
+        97.68389999999988,
+        97.68389999999988
+      ],
+      "sourceBounds": [
+        672.1673000000001,
+        895.5402,
+        769.8512,
+        993.2240999999999
+      ],
+      "padding": 0,
+      "pathCount": 2,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-refresh.svg",
+      "viewBox": [
+        93.8300999999999,
+        93.83010000000002
+      ],
+      "sourceBounds": [
+        1158.5454,
+        897.4672,
+        1252.3754999999999,
+        991.2973000000001
+      ],
+      "padding": 0,
+      "pathCount": 2,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-edit.svg",
+      "viewBox": [
+        91.38739999999984,
+        91.38739999999984
+      ],
+      "sourceBounds": [
+        1655.6878000000002,
+        906.5484000000001,
+        1747.0752,
+        997.9358
+      ],
+      "padding": 0,
+      "pathCount": 2,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-success.svg",
+      "viewBox": [
+        93.91999999999999,
+        93.91999999999996
+      ],
+      "sourceBounds": [
+        170.0954,
+        656.9508999999999,
+        264.0154,
+        750.8708999999999
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-error.svg",
+      "viewBox": [
+        93.92000000000007,
+        93.92000000000007
+      ],
+      "sourceBounds": [
+        674.0491999999999,
+        656.9509,
+        767.9692,
+        750.8709000000001
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-analytics.svg",
+      "viewBox": [
+        88.49900000000002,
+        88.49900000000002
+      ],
+      "sourceBounds": [
+        1161.211,
+        659.661,
+        1249.71,
+        748.16
+      ],
+      "padding": 0,
+      "pathCount": 3,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-search.svg",
+      "viewBox": [
+        92.65000000000009,
+        92.65000000000009
+      ],
+      "sourceBounds": [
+        1655.0566,
+        657.031,
+        1747.7066,
+        749.681
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-expand.svg",
+      "viewBox": [
+        93.97,
+        93.97000000000003
+      ],
+      "sourceBounds": [
+        170.07039999999998,
+        405.5748,
+        264.0404,
+        499.5448
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-next.svg",
+      "viewBox": [
+        93.97000000000003,
+        93.96999999999997
+      ],
+      "sourceBounds": [
+        676.4241,
+        410.17470000000003,
+        770.3941,
+        504.1447
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-download.svg",
+      "viewBox": [
+        89.01009999999997,
+        89.01009999999997
+      ],
+      "sourceBounds": [
+        1160.9554,
+        412.49605,
+        1249.9655,
+        501.50615
+      ],
+      "padding": 0,
+      "pathCount": 3,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-lock.svg",
+      "viewBox": [
+        94.98999999999978,
+        94.99000000000001
+      ],
+      "sourceBounds": [
+        1653.8870000000002,
+        412.751,
+        1748.877,
+        507.741
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-close.svg",
+      "viewBox": [
+        88.5,
+        88.5
+      ],
+      "sourceBounds": [
+        170.2704,
+        148.93900000000002,
+        258.7704,
+        237.43900000000002
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-delete.svg",
+      "viewBox": [
+        88.49000000000001,
+        88.49000000000001
+      ],
+      "sourceBounds": [
+        672.1464,
+        148.94389999999999,
+        760.6364,
+        237.4339
+      ],
+      "padding": 0,
+      "pathCount": 2,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-settings.svg",
+      "viewBox": [
+        93.92000000000007,
+        93.91999999999999
+      ],
+      "sourceBounds": [
+        1158.934,
+        148.3965,
+        1252.854,
+        242.3165
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    },
+    {
+      "file": "icon-risk.svg",
+      "viewBox": [
+        97.54000000000019,
+        97.54000000000002
+      ],
+      "sourceBounds": [
+        1653.6137999999999,
+        146.5865,
+        1751.1538,
+        244.12650000000002
+      ],
+      "padding": 0,
+      "pathCount": 1,
+      "fillOverride": "currentColor"
+    }
+  ]
+}
