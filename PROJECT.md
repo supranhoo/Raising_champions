@@ -1,12 +1,12 @@
-# Project: Zoptro Dual-User Web Application
+# Project: Zoptro 1-to-N Parent-to-Children Architecture Upgrade
 
 ## Architecture
 Zoptro is a dual-user (Student and Parent) web application designed for Google Apps Script deployment with a built-in local browser mock fallback.
-The application strictly embodies the Optra360 / Zoptro Brand Expression System (sharp 90° square edges, zero border-radius, Outfit and Figtree typography, Authority Blue #09293D, Progress Orange #F65800, Grounded Olive #666D57, Clarity Ivory #F4F2EA).
+This project upgrades Zoptro from a single-child model to a **1-to-N parent-to-children relational architecture**, allowing any parent to link and monitor multiple children separately with individual profiles, wallets, streaks, quests, and rewards, with strict RBAC enforcement, LockService concurrency protection, and full adherence to the Zoptro Brand Expression System Guidelines (zero border-radius, Outfit/Figtree typography, and official Zoptro color palette).
 
 ### System Data Flow
 ```
-[Student / Parent Browser UI]
+[Student / Parent Browser SPA UI]
              │
       (ZoptroApiClient)
        /             \
@@ -16,51 +16,64 @@ The application strictly embodies the Optra360 / Zoptro Brand Expression System 
       │               │
       ▼               ▼
 [Google Sheets DB] [Persistent Local Store]
-  - Users          - Users
-  - HabitsQuests   - HabitsQuests
-  - Submissions    - Submissions
-  - RewardsCatalog - RewardsCatalog
-  - Redemptions    - Redemptions
-  - ActivityLogs   - ActivityLogs
+  - Users (14 cols, linkedParentId FK)
+  - HabitsQuests (10 cols, parentUserId FK)
+  - SubmissionsQueue (11 cols, studentId FK, parentUserId FK)
+  - RewardsCatalog (8 cols, parentUserId FK)
+  - RedemptionsQueue (10 cols, studentId FK, parentUserId FK)
+  - ActivityLogs (7 cols, userId FK)
 ```
 
 ### Module Boundaries
-1. **Brand & Design System**: Tailwind CSS configuration, typography imports (`Outfit` display, `Figtree` body), color palette tokens, global 90° sharp geometric rules (`rounded-none`, `border-radius: 0px !important`), flat cards with generous padding, zero neon/cyber glows or gradients.
-2. **Dual-User Authentication & Pairing**: Parent registration (auto-generates 6-character family pairing code), Student registration (requires valid pairing code), PIN and password authentication, persistent session token in `localStorage`, PIN-guarded role switching.
-3. **Student Focus Portal**: Focus Dashboard (daily quest checklist with "Pending Parent Verification" state, streak tracker, Focus Coins & XP wallet, Level progression), Interactive GK Arena (20 questions with queued rewards), Competitive Exam Drills (9 syllabi, PYQP), Junior News & Story Labs, Rewards Catalog (redemption submission).
-4. **Parent HQ (Control Hub)**: Strict Verification Queue (1-click Approve/Reject for student quest submissions and reward redemptions before wallet balances are updated), Quest & Habit Management (add, edit, archive, customize coin/XP values), Security Controls (student PIN/password management, study schedule limits), Analytics & Email Digest trigger.
-5. **Dual-Mode Backend Engine (`google_apps_script_backend.js` & `ZoptroApiClient`)**:
-   - Production mode: Google Apps Script with 6-sheet schema (`Users`, `HabitsQuests`, `SubmissionsQueue`, `RewardsCatalog`, `RedemptionsQueue`, `ActivityLogs`), role-based validation, parent-exclusive governance.
-   - Local Browser Mock mode: In-browser `localStorage` database mirroring the 6 tables, providing complete functional parity, instant offline testability, and data persistence across refreshes.
+1. **Relational Backend Engine (`google_apps_script_backend.js`)**:
+   - Google Sheets 6-table relational schema with existing foreign keys (`Users.linkedParentId`, `SubmissionsQueue.studentId`, `RedemptionsQueue.studentId`).
+   - Atomic concurrency control via `withScriptLock` (10s timeout, fail-closed).
+   - Parent governance & pairing assertions: `assertParent(parentUserId)`, `assertParentPairing(parentUserId, studentId)`.
+   - 1-to-N multi-child queries: `getLinkedStudents({ parentUserId })`.
+   - Enriched verification queue: `getPendingVerifications({ parentUserId, studentId })` with child name attribution and optional child filter.
+   - Per-child quest status tracking in `getHabitsAndQuests({ userId, studentId })`.
+   - Multi-child progress reporting in `triggerEmailDigest({ parentUserId })`.
+   - Backward-compatible legacy bridges (`getCommanderData`, `updateWalletCoins`, `saveHabitStatus`) with optional `studentId`.
+
+2. **Frontend SPA & Parent HQ (`divyank_mission_control_google_apps_script_app.html`)**:
+   - `BrowserMockBackend` & `ZoptroApiClient` with 1-to-N multi-child support (`getLinkedChildren`).
+   - Multi-child in-memory state: `activeChildId`, `linkedChildren`.
+   - Parent HQ Child Selector bar with dynamic child pill cards (avatar, name, level, streak, coins).
+   - Dynamic child-scoped operations in Parent HQ: 1-click verification queue with child attribution badges, custom appreciation bonus targeting `activeChildId`, security/PIN update targeting `activeChildId`, child-specific analytics.
+   - Student authentication: individual child profile & PIN access per child.
+   - Strict Zoptro Brand System compliance: universal 90° square edges (`* { border-radius: 0px !important; }`), zero gradients, zero neon glows, Outfit display font, Figtree body font, and official color palette (#09293D, #F4F2EA, #666D57, #F65800).
+
+3. **Authoritative Specification & Contract Oracle (`tests/harness/zoptro_contract_oracle.js`)**:
+   - Reference implementation maintaining parity with GAS backend and BrowserMockBackend.
+   - Multi-child contract simulation for automated test suites.
+
+4. **Automated Test Suites (`tests/`, `tests/run_tests.js`)**:
+   - Master runner executing existing Tiers 1-4 (216 tests, 100% pass guarantee).
+   - Dedicated multi-child automated tests covering multi-child linking, wallet isolation, quest isolation, redemption escrow/refund isolation, Parent HQ child switching, LockService concurrency, and sibling RBAC defenses.
 
 ---
 
 ## Feature Inventory
-Every feature identified during the survey phase is mapped to a milestone below:
+Every feature required for the 1-to-N parent-to-children upgrade is cataloged below with its assigned milestone:
 
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Brand Color Palette Tokens | Full integration of Authority Blue #09293D, Progress Orange #F65800, Grounded Olive #666D57, Clarity Ivory #F4F2EA, S1-S8, T1-T8 | M2 | R1, Brand PDF |
-| 2 | Brand Typography System | Integration of Outfit (Display) and Figtree (Body), left-aligned default | M2 | R1, Brand PDF |
-| 3 | Strict 90° Geometric Styling | Complete eradication of rounded corners (`border-radius: 0px` / `rounded-none`), zero gradients, zero neon glows | M2 | R1, Brand PDF |
-| 4 | Google Sheets 6-Table Relational Schema | Self-healing schema: Users, HabitsQuests, SubmissionsQueue, RewardsCatalog, RedemptionsQueue, ActivityLogs | M1 | R4, Survey |
-| 5 | Dual-Mode API Client & Browser Mock | `ZoptroApiClient` with persistent `localStorage` mock mirroring GAS backend methods | M1 | R4, Survey |
-| 6 | Server-Side RBAC & Parent Governance | Role-based authorization preventing students from awarding coins or approving own tasks | M1 | R2, Survey |
-| 7 | Parent Registration & Pairing Code Generation | Parent signs up, sets PIN/password, receives unique 6-char family pairing code | M3 | R2, Survey |
-| 8 | Student Registration & Pairing Validation | Student signs up, requires valid pairing code, links to parent account | M3 | R2, Survey |
-| 9 | PIN/Password Auth & Session Persistence | Secure login, session token stored in client storage, automatic session restore | M3 | R2, Survey |
-| 10 | PIN-Guarded Role Switching | Switching between Student and Parent requires PIN/password authentication | M3 | R2, Acceptance Criteria |
-| 11 | Student Focus Dashboard | Daily Quests, streak tracker, Focus Coins & XP wallet, Level progression | M3 | R3, Survey |
-| 12 | Quest Submission to Verification Queue | Marking quests complete transitions to "Pending Parent Verification" without instant coins | M3 | R3, Acceptance Criteria |
-| 13 | Interactive GK Arena & Study Sprints | Quizzes and focus timer with queued reward submission upon completion | M3 | R3, Survey |
-| 14 | Rewards Catalog & Redemption Queue | Student browses rewards and submits redemption requests to parent queue | M3 | R3, Survey |
-| 15 | Parent HQ Verification Queue | 1-click Approve/Reject for student quest submissions and reward redemptions | M3 | R3, Acceptance Criteria |
-| 16 | Parent Habit & Quest Management | Add, edit, archive habits, customize coin and XP point values | M3 | R3, Survey |
-| 17 | Parent Security & Account Controls | Manage student PIN/password, set study schedule limits, view audit trails | M3 | R3, Survey |
-| 18 | Analytics & One-Click Email Digest | Weekly logs, streak summaries, and one-click email digest trigger | M3 | R3, Survey |
-| 19 | Real-Time Feedback adhering to Brand | Audio and visual feedback with sharp geometric cues (no neon halos) | M3 | R3, Brand PDF |
-| 20 | Comprehensive E2E Testing Suite (Tiers 1-4) | Automated requirement-driven opaque-box test suite verifying all features | M4 | E2E Track |
-| 21 | Adversarial Coverage Hardening (Tier 5) | White-box stress tests, boundary conditions, integrity verification | M4 | E2E Track |
+| 1 | Feasibility Assessment & Architecture Blueprint | Formal architectural assessment detailing 1-to-N schema, API changes, LockService concurrency, Parent HQ state flow, and migration/test strategy | M1 | R1, Survey |
+| 2 | Backend 1-to-N Multi-Child Pairing & Query API | Ability for a parent to link multiple children via family pairing code and query them via `getLinkedStudents({ parentUserId })` | M2 | R2, Survey |
+| 3 | Per-Child Wallet & Streak State Isolation | Guarantee that coins, XP, level, and streak are tracked strictly per-child with zero cross-child leakage | M2 | R2, Acceptance Criteria |
+| 4 | Verification Queue Child Attribution & Filtering | Enrich `getPendingVerifications` with `studentName` and support optional `studentId` filtering | M2 | R2, Survey |
+| 5 | Per-Child Quest Status Evaluation | Update `getHabitsAndQuests` to evaluate quest completion per child when queried by a parent | M2 | R2, Survey |
+| 6 | LockService Concurrency & RBAC Enforcement | Verify `withScriptLock` wraps all multi-child mutations and `assertParentPairing` prevents cross-family/sibling tampering | M2 | R2, Acceptance Criteria |
+| 7 | Multi-Child Email Digest Aggregation | Update `triggerEmailDigest` to format and report progress for all linked children of the parent | M2 | R2, Survey |
+| 8 | Legacy Bridge Parameterization | Update legacy bridge functions (`getCommanderData`, `updateWalletCoins`, `saveHabitStatus`) with optional `studentId` | M2 | R2, Survey |
+| 9 | Dual-Mode Parity (MockBackend & ZoptroApiClient) | Implement multi-child support and seed data in `BrowserMockBackend`, `ZoptroApiClient`, and `ZoptroContractOracle` | M3 | R3, Survey |
+| 10 | Parent HQ Child Selector Component | Brand-compliant child selector bar in Parent HQ allowing parent to switch active child context | M3 | R3, Acceptance Criteria |
+| 11 | Child-Scoped Parent Actions & Attribution | Verification queue child badges, custom bonus targeting `activeChildId`, PIN update targeting `activeChildId` | M3 | R3, Acceptance Criteria |
+| 12 | Student Login with Individual Profile/PIN | Support individual child profile selection and PIN verification during student sign-in | M3 | R3, Acceptance Criteria |
+| 13 | Zoptro Brand Expression Compliance | Verify 0px border-radius, Outfit/Figtree fonts, Zoptro color palette (#09293D, #F4F2EA, #666D57, #F65800), zero gradients | M3 | R3, Brand PDF |
+| 14 | Automated Multi-Child Backend & Isolation Tests | Comprehensive test suite for multi-child linking, wallet isolation, redemption escrow/refund, concurrency, and RBAC | M4 | R4, Acceptance Criteria |
+| 15 | Automated Multi-Child Frontend & Parent HQ Tests | DOM and SPA workflow tests verifying child selector, child badges, bonus targeting, and student PIN login | M4 | R4, Acceptance Criteria |
+| 16 | Regression Verification (216/216 Tests Passing) | Guarantee 100% pass rate on existing test runner (`node tests/run_tests.js`) with zero regressions | M4 | R4, Acceptance Criteria |
 
 ---
 
@@ -68,63 +81,60 @@ Every feature identified during the survey phase is mapped to a milestone below:
 
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Dual-Mode Backend Engine & Relational Schema | 6-sheet schema self-healing in GAS, RBAC parent-exclusive governance, `ZoptroApiClient` with persistent `localStorage` mock | Survey complete | DONE |
-| M2 | Brand System Overhaul & Visual Identity | Eradicate all rounded corners, glows, gradients; apply Outfit/Figtree, Zoptro palette, flat 90° cards | M1 | DONE |
-| M3 | Dual-User Auth, Pairing & Portal Workflows | Sign-Up/Sign-In, pairing codes, PIN role lock, Student Portal, Parent HQ verification queue & habit/security controls | M1, M2 | DONE |
-| M4 | E2E Test Suite Validation & Adversarial Hardening | Pass 100% E2E tests (Tiers 1-4) published by E2E track, Tier 5 challenger hardening, forensic integrity audit | M1, M2, M3, TEST_READY | IN_PROGRESS |
+| M1 | Feasibility Assessment & Architecture Plan | Compile comprehensive feasibility assessment and implementation plan covering schema, concurrency, RBAC, state, and test strategy | Survey complete | DONE |
+| M2 | 1-to-N Relational Backend & RBAC Implementation | Update `google_apps_script_backend.js` and `tests/harness/zoptro_contract_oracle.js` for multi-child linking, isolation, queries, and LockService RBAC | M1 | DONE |
+| M3 | Multi-Child Frontend SPA & Parent HQ Implementation | Update `divyank_mission_control_google_apps_script_app.html` with Child Selector, child-scoped actions, student PIN login, brand compliance | M2 | DONE |
+| M4 | Test Suite Update, Regression Verification & Hardening | Update `tests/`, add multi-child test suites, integrate into `tests/run_tests.js`, verify 100% pass with zero regressions | M2, M3 | DONE |
 
 ---
 
 ## Interface Contracts
 
-### 1. Backend API (`ZoptroApiClient` & GAS Bridge)
+### 1. Multi-Child Backend API Contract
 ```javascript
-// Auth & Pairing
-signUpParent({ fullName, email, pin, password }) => Promise<{ success, user, pairingCode }>
-signUpStudent({ fullName, pin, pairingCode }) => Promise<{ success, user }>
-loginUser({ identifier, pinOrPassword, role }) => Promise<{ success, token, user }>
-verifyRolePin({ userId, pin, targetRole }) => Promise<{ success, verified }>
+// Children Roster Query
+getLinkedStudents({ parentUserId }) => Promise<{ success: boolean, students: Array<{ id, fullName, coins, xp, level, streak, createdAt, lastLoginAt }> }>
+// Local Mock & Oracle alias:
+getLinkedChildren({ parentUserId }) => Promise<{ success: boolean, children: Array<{ id, fullName, coins, xp, level, streak, createdAt, lastLoginAt }> }>
 
-// Habits & Quests
-getHabitsAndQuests({ userId, role }) => Promise<{ success, habits }>
-submitQuestCompletion({ studentId, questId, notes }) => Promise<{ success, submissionId, status: "PENDING_VERIFICATION" }>
-saveHabit({ habitData, parentUserId }) => Promise<{ success, habit }>
-deleteHabit({ habitId, parentUserId }) => Promise<{ success }>
+// Verification Queue with Child Attribution
+getPendingVerifications({ parentUserId, studentId? }) => Promise<{
+  success: boolean,
+  pendingQuests: Array<{ id, studentId, studentName, questId, questTitle, points, xp, status, submittedAt, notes }>,
+  pendingRedemptions: Array<{ id, studentId, studentName, rewardId, rewardTitle, costCoins, status, requestedAt, notes }>
+}>
 
-// Verification Queue
-getPendingVerifications({ parentUserId }) => Promise<{ success, pendingQuests, pendingRedemptions }>
-approveQuestSubmission({ submissionId, parentUserId, bonusCoins }) => Promise<{ success, updatedWallet }>
-rejectQuestSubmission({ submissionId, parentUserId, reason }) => Promise<{ success }>
-approveRedemption({ redemptionId, parentUserId }) => Promise<{ success }>
-rejectRedemption({ redemptionId, parentUserId, reason }) => Promise<{ success, refundedCoins }>
+// Per-Child Quest Status Query
+getHabitsAndQuests({ userId, studentId? }) => Promise<{ success: boolean, habits: Array<HabitObject> }>
 
-// Rewards Catalog
-getRewardsCatalog({ userId }) => Promise<{ success, rewards }>
-submitRedemptionRequest({ studentId, rewardId }) => Promise<{ success, redemptionId, status: "PENDING_APPROVAL" }>
-manageRewardItem({ rewardData, parentUserId }) => Promise<{ success, reward }>
+// Multi-Child Email Digest
+triggerEmailDigest({ parentUserId }) => Promise<{ success: boolean, message: string }>
 
-// Parent Controls & Analytics
-updateStudentSecurity({ parentUserId, studentId, newPin, newPassword }) => Promise<{ success }>
-getActivityLogs({ userId, role }) => Promise<{ success, logs }>
-triggerEmailDigest({ parentUserId }) => Promise<{ success, message }>
+// Legacy Bridges with Optional studentId
+getCommanderData({ studentId? }) => Promise<{ success: boolean, commander: object }>
+updateWalletCoins(deltaCoins, deltaXp, reason, type, status, parentUserId, studentId?) => Promise<{ success: boolean, updatedWallet: object }>
+saveHabitStatus(habitId, isCompleted, points, habitTitle, studentId?) => Promise<{ success: boolean }>
 ```
 
-### 2. Relational Schema Structure (Google Sheets & LocalStorage Mock)
-- `Users`: `id`, `role`, `fullName`, `email`, `pinHash`, `passwordHash`, `pairingCode`, `linkedParentId`, `coins`, `xp`, `level`, `streak`, `createdAt`
-- `HabitsQuests`: `id`, `parentUserId`, `title`, `category`, `points`, `xp`, `timeSlot`, `icon`, `isArchived`, `createdAt`
-- `SubmissionsQueue`: `id`, `studentId`, `parentUserId`, `questId`, `questTitle`, `points`, `xp`, `status` ("PENDING", "APPROVED", "REJECTED"), `submittedAt`, `reviewedAt`, `notes`
-- `RewardsCatalog`: `id`, `parentUserId`, `title`, `costCoins`, `icon`, `category`, `isArchived`, `createdAt`
-- `RedemptionsQueue`: `id`, `studentId`, `parentUserId`, `rewardId`, `rewardTitle`, `costCoins`, `status` ("PENDING", "APPROVED", "REJECTED"), `requestedAt`, `reviewedAt`
-- `ActivityLogs`: `id`, `userId`, `action`, `details`, `category`, `status`, `timestamp`
+### 2. Frontend State Management Contract
+```javascript
+// Active Multi-Child State in Window Scope:
+var activeChildId = 'u_stu_demo';
+var linkedChildren = []; // Array of student profile objects
+
+// Child Switcher Function:
+function selectActiveChild(childId);
+function renderParentChildSelector();
+function updateActiveChildDisplay();
+```
 
 ---
 
 ## Code Layout
-- `google_apps_script_backend.js`: Production Google Apps Script backend code (doGet, database setup, sheet tables, API handlers, RBAC, email digest).
-- `divyank_mission_control_google_apps_script_app.html`: Single-page frontend application containing:
-  - `<head>`: Google Fonts (`Outfit`, `Figtree`), Tailwind CSS configuration with Zoptro tokens.
-  - `<style>`: Global CSS rules (`border-radius: 0px !important`, `.rounded-none`, custom scrollbar).
-  - `<body>`: Authentication modals, Student Portal UI, Parent HQ UI, Verification Queue UI, GK Arena, Study Sprints.
-  - `<script>`: State management, `BrowserMockBackend`, `ZoptroApiClient`, UI controllers, audio effects.
-- `tests/`: Automated test runner and test cases for Tiers 1-4 and Tier 5.
-- `.agents/`: Coordination and audit metadata.
+- `google_apps_script_backend.js`: Production Google Apps Script backend engine with 6-sheet schema, LockService concurrency, RBAC, and 1-to-N endpoints.
+- `divyank_mission_control_google_apps_script_app.html`: Single-page frontend app with `BrowserMockBackend`, `ZoptroApiClient`, Parent HQ child selector, and student profile/PIN login.
+- `tests/harness/zoptro_contract_oracle.js`: Authoritative specification reference program and relational schema oracle.
+- `tests/test_multichild_backend_and_isolation.js`: Automated tests for 1-to-N backend linking, state isolation, concurrency, and RBAC.
+- `tests/test_multichild_frontend_hq.js`: Automated tests for Parent HQ child selector, DOM elements, and student login.
+- `tests/run_tests.js`: Master test suite runner executing all regression and 1-to-N test suites.
+- `FEASIBILITY_AND_IMPLEMENTATION_PLAN.md`: Comprehensive feasibility assessment and detailed architectural blueprint.

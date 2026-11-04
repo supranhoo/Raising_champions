@@ -117,6 +117,36 @@ class ZoptroContractOracle {
     return entry;
   }
 
+  assertParent(parentUserId) {
+    if (!parentUserId) {
+      throw new Error('UNAUTHORIZED: Parent governance required.');
+    }
+    const parent = this.tables.Users.find(
+      u => u.id === parentUserId && u.role === 'parent'
+    );
+    if (!parent) {
+      throw new Error('UNAUTHORIZED: Parent governance required.');
+    }
+    return parent;
+  }
+
+  assertParentPairing(parentUserId, studentId) {
+    const parent = this.assertParent(parentUserId);
+    if (!studentId) {
+      throw new Error('MISSING_STUDENT_ID: studentId is required for family pairing verification.');
+    }
+    const student = this.tables.Users.find(
+      u => u.id === studentId && u.role === 'student'
+    );
+    if (!student) {
+      throw new Error('STUDENT_NOT_FOUND: Student record does not exist.');
+    }
+    if (student.linkedParentId !== parent.id) {
+      throw new Error('UNAUTHORIZED: Student is not paired with this parent account.');
+    }
+    return { parent, student };
+  }
+
   // -----------------------------------------------------------------------
   // Auth & Pairing (Features 6, 7, 8, 9, 10)
   // -----------------------------------------------------------------------
@@ -309,7 +339,7 @@ class ZoptroContractOracle {
   // -----------------------------------------------------------------------
   // Habits & Quests (Features 11, 12, 13, 16)
   // -----------------------------------------------------------------------
-  async getHabitsAndQuests({ userId, role }) {
+  async getHabitsAndQuests({ userId, role, studentId } = {}) {
     if (!userId) {
       return { success: false, error: 'User ID is required.' };
     }
@@ -319,14 +349,54 @@ class ZoptroContractOracle {
     }
 
     let habits = [];
+    let targetStudentId = null;
+
     if (user.role === 'parent') {
+      if (studentId) {
+        const student = this.tables.Users.find(
+          u => u.id === studentId && u.role === 'student' && u.linkedParentId === user.id
+        );
+        if (!student) {
+          return { success: false, error: 'UNAUTHORIZED: Student is not paired with this parent account.' };
+        }
+        targetStudentId = student.id;
+      } else {
+        const linkedStudent = this.tables.Users.find(
+          u => u.role === 'student' && u.linkedParentId === user.id
+        );
+        targetStudentId = linkedStudent ? linkedStudent.id : null;
+      }
       habits = this.tables.HabitsQuests.filter(h => h.parentUserId === user.id);
     } else {
+      targetStudentId = user.id;
       habits = this.tables.HabitsQuests.filter(
         h => h.parentUserId === user.linkedParentId && !h.isArchived
       );
     }
-    return { success: true, habits };
+
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const enrichedHabits = habits.map(h => {
+      const sub = targetStudentId ? this.tables.SubmissionsQueue.find(s =>
+        s.questId === h.id &&
+        s.studentId === targetStudentId &&
+        (s.submittedAt ? s.submittedAt.substring(0, 10) === todayStr : false)
+      ) : null;
+
+      let status = 'AVAILABLE';
+      let completed = false;
+      if (sub) {
+        status = sub.status === 'PENDING' ? 'PENDING_VERIFICATION' : sub.status;
+        completed = sub.status === 'APPROVED';
+      }
+
+      return {
+        ...h,
+        status,
+        completed
+      };
+    });
+
+    return { success: true, habits: enrichedHabits };
   }
 
   async submitQuestCompletion({ studentId, questId, notes = '' }) {
@@ -459,23 +529,92 @@ class ZoptroContractOracle {
   }
 
   // -----------------------------------------------------------------------
-  // Verification Queue (Feature 6, 15)
+  // Verification Queue (Feature 6, 15) & Roster (Milestone 2)
   // -----------------------------------------------------------------------
-  async getPendingVerifications({ parentUserId }) {
-    if (!parentUserId) {
-      return { success: false, error: 'Parent authorization required.' };
-    }
-    const parent = this.tables.Users.find(u => u.id === parentUserId && u.role === 'parent');
-    if (!parent) {
-      return { success: false, error: 'Unauthorized: only parents can view verification queue.' };
+  async getLinkedStudents({ parentUserId }) {
+    try {
+      this.assertParent(parentUserId);
+    } catch (err) {
+      return { success: false, error: err.message };
     }
 
-    const pendingQuests = this.tables.SubmissionsQueue.filter(
-      s => s.parentUserId === parentUserId && s.status === 'PENDING'
+    const students = this.tables.Users
+      .filter(u => u.role === 'student' && u.linkedParentId === parentUserId)
+      .map(u => ({
+        id: u.id,
+        fullName: u.fullName,
+        coins: Number(u.coins) || 0,
+        xp: Number(u.xp) || 0,
+        level: Number(u.level) || 1,
+        streak: Number(u.streak) || 0,
+        createdAt: u.createdAt || '',
+        lastLoginAt: u.lastLoginAt || ''
+      }));
+
+    return {
+      success: true,
+      students,
+      children: students
+    };
+  }
+
+  async getLinkedChildren(payload) {
+    return this.getLinkedStudents(payload);
+  }
+
+  async getPendingVerifications(payload) {
+    const parentUserId = payload && payload.parentUserId ? payload.parentUserId : null;
+    const studentId = payload && payload.studentId ? payload.studentId : null;
+
+    try {
+      this.assertParent(parentUserId);
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+
+    if (studentId) {
+      try {
+        this.assertParentPairing(parentUserId, studentId);
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+
+    const linkedStudents = this.tables.Users.filter(
+      u => u.role === 'student' && u.linkedParentId === parentUserId
     );
-    const pendingRedemptions = this.tables.RedemptionsQueue.filter(
-      r => r.parentUserId === parentUserId && r.status === 'PENDING'
-    );
+    const linkedStudentIds = new Set(linkedStudents.map(u => u.id));
+
+    const studentNameMap = {};
+    this.tables.Users.forEach(u => {
+      if (u.role === 'student') {
+        studentNameMap[u.id] = u.fullName || 'Student';
+      }
+    });
+
+    const pendingQuests = this.tables.SubmissionsQueue
+      .filter(s => {
+        const isPending = s.status === 'PENDING' || s.status === 'PENDING_VERIFICATION';
+        const isFamily = s.parentUserId === parentUserId || linkedStudentIds.has(s.studentId);
+        const isStudentMatch = !studentId || s.studentId === studentId;
+        return isPending && isFamily && isStudentMatch;
+      })
+      .map(s => ({
+        ...s,
+        studentName: studentNameMap[s.studentId] || 'Student'
+      }));
+
+    const pendingRedemptions = this.tables.RedemptionsQueue
+      .filter(r => {
+        const isPending = r.status === 'PENDING' || r.status === 'PENDING_APPROVAL';
+        const isFamily = r.parentUserId === parentUserId || linkedStudentIds.has(r.studentId);
+        const isStudentMatch = !studentId || r.studentId === studentId;
+        return isPending && isFamily && isStudentMatch;
+      })
+      .map(r => ({
+        ...r,
+        studentName: studentNameMap[r.studentId] || 'Student'
+      }));
 
     return { success: true, pendingQuests, pendingRedemptions };
   }
@@ -834,6 +973,25 @@ class ZoptroContractOracle {
       return { success: false, error: 'Unauthorized: only parents can trigger email digest.' };
     }
 
+    const children = this.tables.Users.filter(
+      u => u.role === 'student' && u.linkedParentId === parent.id
+    );
+
+    const childCards = children.map(c => {
+      const completedQuests = this.tables.SubmissionsQueue.filter(
+        s => s.studentId === c.id && s.status === 'APPROVED'
+      ).length;
+      return {
+        id: c.id,
+        fullName: c.fullName,
+        coins: c.coins || 0,
+        xp: c.xp || 0,
+        level: c.level || 1,
+        streak: c.streak || 0,
+        questCount: completedQuests
+      };
+    });
+
     this._logActivity(
       parentUserId,
       'EMAIL_DIGEST',
@@ -844,7 +1002,103 @@ class ZoptroContractOracle {
 
     return {
       success: true,
+      recipient: parent.email,
+      sentTo: parent.email,
+      childCount: children.length,
+      children: childCards,
       message: `Weekly progress digest dispatched successfully to ${parent.email}.`
+    };
+  }
+
+  // -----------------------------------------------------------------------
+  // Legacy Bridges (Backward Compatibility)
+  // -----------------------------------------------------------------------
+  async getCommanderData({ studentId } = {}) {
+    let student = null;
+    if (studentId) {
+      student = this.tables.Users.find(u => u.id === studentId && u.role === 'student');
+    } else {
+      student = this.tables.Users.find(u => u.role === 'student');
+    }
+    const defaultStudent = student || { id: 'u_stu_demo', fullName: 'Commander Divyank', coins: 340, xp: 680, level: 3, streak: 5 };
+    const habitsRes = await this.getHabitsAndQuests({ userId: defaultStudent.id, role: 'student' });
+    const logsRes = await this.getActivityLogs({ userId: defaultStudent.id, role: 'student' });
+
+    const profileData = {
+      id: defaultStudent.id,
+      fullName: defaultStudent.fullName,
+      focusCoins: Number(defaultStudent.coins) || 0,
+      xp: Number(defaultStudent.xp) || 0,
+      level: Number(defaultStudent.level) || 1,
+      streak: Number(defaultStudent.streak) || 0,
+      avatar: '🚀'
+    };
+
+    return {
+      success: true,
+      commander: profileData,
+      profile: profileData,
+      habits: habitsRes.habits || [],
+      logs: logsRes.logs || []
+    };
+  }
+
+  // -----------------------------------------------------------------------
+  // Parent Bonus Awards (Feature 11 / Contract Parity with GAS Backend)
+  // -----------------------------------------------------------------------
+  async awardParentBonus(payload) {
+    const parentUserId = payload && payload.parentUserId ? String(payload.parentUserId) : '';
+    const studentId = payload && payload.studentId ? String(payload.studentId) : 'u_stu_demo';
+
+    let pairing;
+    try {
+      pairing = this.assertParentPairing(parentUserId, studentId);
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+
+    const rawCoins = payload && payload.coins !== undefined ? Number(payload.coins) : 15;
+    if (isNaN(rawCoins) || !Number.isFinite(rawCoins) || rawCoins < 0 || rawCoins > 1000) {
+      return { success: false, error: 'INVALID_COINS: Coins must be a valid non-negative number <= 1000.' };
+    }
+    const coins = Math.floor(rawCoins);
+
+    const rawXp = payload && payload.xp !== undefined ? Number(payload.xp) : coins * 2;
+    if (isNaN(rawXp) || !Number.isFinite(rawXp) || rawXp < 0) {
+      return { success: false, error: 'INVALID_XP: XP must be a valid non-negative number.' };
+    }
+    const xp = Math.floor(rawXp);
+
+    const reason = payload && payload.reason ? String(payload.reason) : 'Respect & Obedience';
+    const category = payload && payload.category ? String(payload.category) : 'respect';
+
+    const student = pairing.student;
+    const currentCoins = Number.isFinite(Number(student.coins)) ? Number(student.coins) : 0;
+    const currentXp = Number.isFinite(Number(student.xp)) ? Number(student.xp) : 0;
+
+    const newCoins = Math.max(0, currentCoins + coins);
+    const newXp = Math.max(0, currentXp + xp);
+    const newLevel = Math.max(1, Math.floor(newXp / 250) + 1);
+
+    student.coins = newCoins;
+    student.xp = newXp;
+    student.level = newLevel;
+
+    this._logActivity(
+      parentUserId,
+      'PARENT_BONUS',
+      `Awarded ${coins} Coins to ${student.fullName}: ${reason}`,
+      category,
+      'VERIFIED'
+    );
+
+    if (this.storage) this.saveToStorage();
+
+    return {
+      success: true,
+      coins: newCoins,
+      xp: newXp,
+      level: newLevel
     };
   }
 }

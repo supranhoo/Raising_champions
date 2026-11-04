@@ -856,14 +856,41 @@ function verifyRolePin(payload) {
 // -------------------------------------------------------------------------
 
 /**
- * Returns active habits for family and current status for student.
+ * Returns active habits for family and evaluates per-child completion status.
+ * If caller is parent and studentId is supplied: enforces assertParentPairing and evaluates for studentId.
+ * If caller is student: evaluates completion strictly for caller userId.
  */
 function getHabitsAndQuests(payload) {
   const userId = payload && payload.userId ? String(payload.userId) : "u_stu_demo";
+  const studentId = payload && payload.studentId ? String(payload.studentId) : null;
   const users = getSheetRecords("Users");
   const user = users.find(function(u) { return String(u.id) === userId; });
 
-  const parentId = user && String(user.role).toLowerCase() === "parent" ? user.id : (user ? user.linkedParentId : "u_par_demo");
+  let parentId = null;
+  let targetStudentId = null;
+
+  if (user && String(user.role).toLowerCase() === "parent") {
+    parentId = user.id;
+    if (studentId) {
+      try {
+        const pairing = assertParentPairing(userId, studentId);
+        targetStudentId = pairing.student.id;
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    } else {
+      // If studentId not specified by parent, default to first linked child
+      const linkedChild = users.find(function(u) {
+        return String(u.role).toLowerCase() === "student" && String(u.linkedParentId) === String(user.id);
+      });
+      targetStudentId = linkedChild ? linkedChild.id : null;
+    }
+  } else {
+    // Caller is student (or unknown/default fallback)
+    targetStudentId = user ? user.id : userId;
+    parentId = user ? user.linkedParentId : "u_par_demo";
+  }
+
   const habits = getSheetRecords("HabitsQuests");
   const submissions = getSheetRecords("SubmissionsQueue");
 
@@ -873,11 +900,12 @@ function getHabitsAndQuests(payload) {
   });
 
   const habitsWithStatus = activeHabits.map(function(h) {
-    const todaysSub = submissions.find(function(s) {
+    const todaysSub = targetStudentId ? submissions.find(function(s) {
       return String(s.questId) === String(h.id) &&
-             String(s.studentId) === String(userId) &&
+             String(s.studentId) === String(targetStudentId) &&
              String(s.submittedAt).substring(0, 10) === todayStr;
-    });
+    }) : null;
+
     return {
       id: String(h.id),
       parentUserId: String(h.parentUserId),
@@ -1053,9 +1081,11 @@ function deleteHabit(payload) {
 // -------------------------------------------------------------------------
 
 /**
- * Parent inspects pending quest submissions and reward redemptions.
+ * Queries all student profiles linked to the specified parent.
+ * Enforces assertParent(parentUserId) authorization.
+ * Returns sanitized student profiles with dual properties 'students' and 'children'.
  */
-function getPendingVerifications(payload) {
+function getLinkedStudents(payload) {
   const parentUserId = payload && payload.parentUserId ? String(payload.parentUserId) : "";
   try {
     assertParent(parentUserId);
@@ -1063,22 +1093,101 @@ function getPendingVerifications(payload) {
     return { success: false, error: err.message };
   }
 
+  const users = getSheetRecords("Users");
+  const linkedStudents = users
+    .filter(function(u) {
+      return String(u.role).toLowerCase() === "student" && String(u.linkedParentId) === String(parentUserId);
+    })
+    .map(function(u) {
+      return {
+        id: String(u.id),
+        fullName: String(u.fullName || ""),
+        coins: Number(u.coins) || 0,
+        xp: Number(u.xp) || 0,
+        level: Number(u.level) || 1,
+        streak: Number(u.streak) || 0,
+        createdAt: String(u.createdAt || ""),
+        lastLoginAt: String(u.lastLoginAt || "")
+      };
+    });
+
+  return {
+    success: true,
+    students: linkedStudents,
+    children: linkedStudents
+  };
+}
+
+/**
+ * Parity alias for getLinkedStudents.
+ */
+function getLinkedChildren(payload) {
+  return getLinkedStudents(payload);
+}
+
+/**
+ * Parent inspects pending quest submissions and reward redemptions.
+ * Enriches each pending item with student display name (studentName).
+ * Supports optional studentId filtering with strict family pairing verification.
+ */
+function getPendingVerifications(payload) {
+  const parentUserId = payload && payload.parentUserId ? String(payload.parentUserId) : "";
+  const studentId = payload && payload.studentId ? String(payload.studentId) : null;
+
+  try {
+    assertParent(parentUserId);
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+
+  if (studentId) {
+    try {
+      assertParentPairing(parentUserId, studentId);
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+
   const submissions = getSheetRecords("SubmissionsQueue");
   const redemptions = getSheetRecords("RedemptionsQueue");
   const users = getSheetRecords("Users");
-  const linkedStudentIds = users
-    .filter(function(u) { return String(u.role).toLowerCase() === "student" && String(u.linkedParentId) === String(parentUserId); })
-    .map(function(u) { return String(u.id); });
 
-  const pendingQuests = submissions.filter(function(s) {
-    return String(s.status) === "PENDING_VERIFICATION" &&
-           (String(s.parentUserId) === String(parentUserId) || linkedStudentIds.indexOf(String(s.studentId)) !== -1);
+  const studentNameMap = {};
+  const linkedStudentIds = [];
+  users.forEach(function(u) {
+    if (String(u.role).toLowerCase() === "student") {
+      studentNameMap[String(u.id)] = String(u.fullName || "Student");
+      if (String(u.linkedParentId) === String(parentUserId)) {
+        linkedStudentIds.push(String(u.id));
+      }
+    }
   });
 
-  const pendingRedemptions = redemptions.filter(function(r) {
-    return String(r.status) === "PENDING_APPROVAL" &&
-           (String(r.parentUserId) === String(parentUserId) || linkedStudentIds.indexOf(String(r.studentId)) !== -1);
-  });
+  const pendingQuests = submissions
+    .filter(function(s) {
+      const isPending = String(s.status) === "PENDING_VERIFICATION";
+      const isFamily = String(s.parentUserId) === String(parentUserId) || linkedStudentIds.indexOf(String(s.studentId)) !== -1;
+      const isStudentMatch = !studentId || String(s.studentId) === studentId;
+      return isPending && isFamily && isStudentMatch;
+    })
+    .map(function(s) {
+      return Object.assign({}, s, {
+        studentName: studentNameMap[String(s.studentId)] || "Student"
+      });
+    });
+
+  const pendingRedemptions = redemptions
+    .filter(function(r) {
+      const isPending = String(r.status) === "PENDING_APPROVAL";
+      const isFamily = String(r.parentUserId) === String(parentUserId) || linkedStudentIds.indexOf(String(r.studentId)) !== -1;
+      const isStudentMatch = !studentId || String(r.studentId) === studentId;
+      return isPending && isFamily && isStudentMatch;
+    })
+    .map(function(r) {
+      return Object.assign({}, r, {
+        studentName: studentNameMap[String(r.studentId)] || "Student"
+      });
+    });
 
   return {
     success: true,
@@ -1607,7 +1716,8 @@ function awardParentBonus(payload) {
 }
 
 /**
- * Sends summary email digest to parent's verified email.
+ * Generates and sends a multi-child progress digest to parent's verified email.
+ * Formats individual progress cards (coins, XP, level, streak, quest count) per child.
  */
 function triggerEmailDigest(payload) {
   const parentUserId = payload && payload.parentUserId ? String(payload.parentUserId) : "u_par_demo";
@@ -1624,15 +1734,48 @@ function triggerEmailDigest(payload) {
   }
 
   const users = getSheetRecords("Users");
-  const student = users.find(function(u) { return String(u.linkedParentId) === parent.id; }) || {
-    fullName: "Student", coins: 0, xp: 0, level: 1, streak: 0
-  };
+  const submissions = getSheetRecords("SubmissionsQueue");
+
+  const children = users.filter(function(u) {
+    return String(u.role).toLowerCase() === "student" && String(u.linkedParentId) === String(parent.id);
+  });
 
   const subject = "🛡️ Zoptro Mission Control - Daily Progress Digest";
-  let body = "<h3>Zoptro Learning & Habit Digest - " + student.fullName + "</h3>";
-  body += "<p><strong>Focus Coins:</strong> " + student.coins + " 🪙</p>";
-  body += "<p><strong>XP Points:</strong> " + student.xp + " (Level " + student.level + ")</p>";
-  body += "<p><strong>Daily Streak:</strong> " + student.streak + " Days 🔥</p>";
+  let body = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #09293D; padding: 20px; background-color: #FFFFFF; border-radius: 0px;'>";
+  body += "<div style='background-color: #09293D; color: #FFFFFF; padding: 15px; margin: -20px -20px 20px -20px; border-radius: 0px;'>";
+  body += "<h2 style='margin: 0; font-size: 20px;'>🛡️ Zoptro Mission Control</h2>";
+  body += "<p style='margin: 5px 0 0 0; font-size: 13px; color: #F4F2EA;'>Family Progress Digest • " + children.length + " Cadet(s) Governed</p>";
+  body += "</div>";
+
+  if (children.length === 0) {
+    body += "<div style='padding: 15px; background-color: #F4F2EA; border: 1px solid #DED9D3; border-radius: 0px;'>";
+    body += "<p style='margin: 0; color: #09293D;'>No student cadet profiles currently linked. Share your family pairing code: <strong>" + (parent.pairingCode || "N/A") + "</strong>.</p>";
+    body += "</div>";
+  } else {
+    children.forEach(function(child) {
+      const completedCount = submissions.filter(function(s) {
+        return String(s.studentId) === String(child.id) && String(s.status) === "APPROVED";
+      }).length;
+      const pendingCount = submissions.filter(function(s) {
+        return String(s.studentId) === String(child.id) && String(s.status) === "PENDING_VERIFICATION";
+      }).length;
+
+      body += "<div style='margin-bottom: 16px; padding: 16px; background-color: #F4F2EA; border: 1px solid #09293D; border-radius: 0px;'>";
+      body += "<h3 style='margin: 0 0 10px 0; color: #09293D; font-size: 16px; border-bottom: 1px solid #09293D; padding-bottom: 6px;'>👤 " + (child.fullName || "Cadet") + "</h3>";
+      body += "<table style='width: 100%; border-collapse: collapse; font-size: 14px;'>";
+      body += "<tr>";
+      body += "<td style='padding: 4px 0;'><strong>Focus Coins:</strong> " + (Number(child.coins) || 0) + " 🪙</td>";
+      body += "<td style='padding: 4px 0;'><strong>XP:</strong> " + (Number(child.xp) || 0) + " (Level " + (Number(child.level) || 1) + ")</td>";
+      body += "</tr><tr>";
+      body += "<td style='padding: 4px 0;'><strong>Daily Streak:</strong> " + (Number(child.streak) || 0) + " Days 🔥</td>";
+      body += "<td style='padding: 4px 0;'><strong>Quests Completed:</strong> " + completedCount + " (Pending: " + pendingCount + ")</td>";
+      body += "</tr></table>";
+      body += "</div>";
+    });
+  }
+
+  body += "<p style='font-size: 12px; color: #666D57; margin-top: 20px; border-top: 1px solid #DED9D3; padding-top: 10px;'>Automated digest dispatched by Zoptro Governance Engine.</p>";
+  body += "</div>";
 
   if (typeof MailApp !== "undefined" && MailApp.sendEmail) {
     try {
@@ -1646,30 +1789,56 @@ function triggerEmailDigest(payload) {
     }
   }
 
-  logActivity(parentUserId, "EMAIL_DIGEST", "Dispatched daily summary email to " + recipientEmail, "digest", "VERIFIED");
-  return { success: true, recipient: recipientEmail, sentTo: recipientEmail, message: "Summary email sent to " + recipientEmail };
+  logActivity(parentUserId, "EMAIL_DIGEST", "Dispatched daily summary email to " + recipientEmail + " for " + children.length + " child(ren)", "digest", "VERIFIED");
+  return {
+    success: true,
+    recipient: recipientEmail,
+    sentTo: recipientEmail,
+    childCount: children.length,
+    message: "Summary email sent to " + recipientEmail
+  };
 }
 
 // -------------------------------------------------------------------------
 // 6. Legacy Bridge Endpoints (Backward Compatibility)
 // -------------------------------------------------------------------------
 
-function getCommanderData() {
+/**
+ * Legacy bridge: returns commander data for specified studentId or first student fallback.
+ * Guarantees backward compatibility by providing both 'profile' and 'commander'.
+ */
+function getCommanderData(payload) {
+  const targetStudentId = payload && payload.studentId ? String(payload.studentId) : null;
   const users = getSheetRecords("Users");
-  const student = users.find(function(u) { return String(u.role).toLowerCase() === "student"; }) || {
-    coins: 340, xp: 680, level: 3, streak: 5
-  };
+  let student = null;
+
+  if (targetStudentId) {
+    student = users.find(function(u) { return String(u.id) === targetStudentId && String(u.role).toLowerCase() === "student"; });
+  } else {
+    student = users.find(function(u) { return String(u.role).toLowerCase() === "student"; });
+  }
+
+  if (!student) {
+    student = { id: "u_stu_demo", fullName: "Student", coins: 340, xp: 680, level: 3, streak: 5 };
+  }
+
   const habitsRes = getHabitsAndQuests({ userId: student.id });
   const logsRes = getActivityLogs({ userId: student.id, role: "student" });
 
+  const profileData = {
+    id: String(student.id),
+    fullName: String(student.fullName || "Student"),
+    focusCoins: Number(student.coins) || 0,
+    xp: Number(student.xp) || 0,
+    level: Number(student.level) || 1,
+    streak: Number(student.streak) || 0,
+    avatar: "🚀"
+  };
+
   return {
-    profile: {
-      focusCoins: Number(student.coins) || 340,
-      xp: Number(student.xp) || 680,
-      level: Number(student.level) || 3,
-      streak: Number(student.streak) || 5,
-      avatar: "🚀"
-    },
+    success: true,
+    commander: profileData,
+    profile: profileData,
     habits: habitsRes.habits || [],
     logs: (logsRes.logs || []).slice(0, 15).map(function(l) {
       return {
@@ -1683,7 +1852,11 @@ function getCommanderData() {
   };
 }
 
-function updateWalletCoins(deltaCoins, deltaXp, reason, type, status, parentUserId) {
+/**
+ * Legacy bridge: adjusts wallet coins and XP for target student with strict RBAC guards.
+ * Supports optional studentId as 7th parameter; enforces assertParentPairing when both parentUserId and studentId are provided.
+ */
+function updateWalletCoins(deltaCoins, deltaXp, reason, type, status, parentUserId, studentId) {
   return withScriptLock(function() {
     const coinsNum = Number(deltaCoins);
     const xpNum = Number(deltaXp);
@@ -1709,14 +1882,28 @@ function updateWalletCoins(deltaCoins, deltaXp, reason, type, status, parentUser
     if (parentUserId) {
       try {
         assertParent(parentUserId);
+        if (studentId) {
+          assertParentPairing(parentUserId, studentId);
+        }
       } catch (err) {
         return { success: false, error: err.message };
       }
     }
 
     const users = getSheetRecords("Users");
-    const student = users.find(function(u) { return String(u.role).toLowerCase() === "student"; });
-    if (!student) return { success: false, error: "STUDENT_NOT_FOUND" };
+    let student = null;
+
+    if (studentId) {
+      student = users.find(function(u) {
+        return String(u.id) === String(studentId) && String(u.role).toLowerCase() === "student";
+      });
+      if (!student) {
+        return { success: false, error: "STUDENT_NOT_FOUND: Specified studentId does not exist." };
+      }
+    } else {
+      student = users.find(function(u) { return String(u.role).toLowerCase() === "student"; });
+      if (!student) return { success: false, error: "STUDENT_NOT_FOUND" };
+    }
 
     const newCoins = Math.max(0, (Number(student.coins) || 0) + coinsNum);
     const newXp = Math.max(0, (Number(student.xp) || 0) + xpNum);
@@ -1729,18 +1916,34 @@ function updateWalletCoins(deltaCoins, deltaXp, reason, type, status, parentUser
     });
 
     logActivity(student.id, "WALLET_UPDATE", reason || "Wallet adjustment", type || "general", status || "VERIFIED");
-    return { success: true, coins: newCoins, xp: newXp };
+    return {
+      success: true,
+      coins: newCoins,
+      xp: newXp,
+      updatedWallet: {
+        id: student.id,
+        coins: newCoins,
+        xp: newXp,
+        level: newLevel
+      }
+    };
   });
 }
 
-function saveHabitStatus(habitId, isCompleted, points, habitTitle) {
-  // Legacy bridge: if student checks habit in legacy mode, route to submission queue
-  const users = getSheetRecords("Users");
-  const student = users.find(function(u) { return String(u.role).toLowerCase() === "student"; });
-  const studentId = student ? student.id : "u_stu_demo";
+/**
+ * Legacy bridge: routes habit check to submission queue for target student.
+ * Supports optional studentId as 5th parameter with fallback to first student.
+ */
+function saveHabitStatus(habitId, isCompleted, points, habitTitle, studentId) {
+  let targetStudentId = studentId ? String(studentId) : null;
+  if (!targetStudentId) {
+    const users = getSheetRecords("Users");
+    const student = users.find(function(u) { return String(u.role).toLowerCase() === "student"; });
+    targetStudentId = student ? student.id : "u_stu_demo";
+  }
 
   if (isCompleted) {
-    return submitQuestCompletion({ studentId: studentId, questId: habitId, notes: habitTitle });
+    return submitQuestCompletion({ studentId: targetStudentId, questId: habitId, notes: habitTitle });
   } else {
     return { success: true, message: "Unchecked" };
   }
@@ -1793,6 +1996,8 @@ if (typeof module !== "undefined" && module.exports) {
     submitQuestCompletion,
     saveHabit,
     deleteHabit,
+    getLinkedStudents,
+    getLinkedChildren,
     getPendingVerifications,
     approveQuestSubmission,
     rejectQuestSubmission,

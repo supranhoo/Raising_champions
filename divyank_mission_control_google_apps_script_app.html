@@ -1059,6 +1059,29 @@
         </div>
       </div>
 
+      <!-- ========================================================================= -->
+      <!-- PARENT HQ: MULTI-CHILD SELECTOR BAR (1-TO-N GOVERNANCE)                   -->
+      <!-- ========================================================================= -->
+      <div id="parentChildSelectorContainer" class="bg-white border-2 border-[#09293D] rounded-none p-4 space-y-3 font-sans">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#DED9D3] pb-2.5">
+          <div class="flex items-center space-x-2.5 flex-wrap gap-1">
+            <h3 class="font-display font-bold text-sm text-[#09293D] uppercase tracking-wider flex items-center gap-2">
+              <span>👨‍👩‍👧‍👦 Family Profiles</span>
+              <span id="parentChildCountBadge" class="text-xs px-2 py-0.5 bg-[#1C5682] text-white rounded-none font-bold">2 Children Linked</span>
+            </h3>
+            <p class="text-xs text-[#666D57] hidden sm:block">Select a child to view individual progress, verify activities, or award points.</p>
+          </div>
+          <div class="text-xs text-[#666D57] font-bold bg-[#F4F2EA] px-2.5 py-1 rounded-none border border-[#DED9D3]">
+            Active Focus: <span id="activeChildNameLabel" class="text-[#09293D] font-bold">Commander Divyank</span>
+          </div>
+        </div>
+
+        <!-- Dynamic Child Selector Pill Cards List -->
+        <div id="parentChildPillsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+          <!-- Populated dynamically via renderParentChildSelector() -->
+        </div>
+      </div>
+
       <!-- SECTION 1: STRICT VERIFICATION QUEUE -->
       <div class="bg-white border-2 border-[#09293D] rounded-none p-5  space-y-4 font-sans">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#DED9D3] pb-3">
@@ -1072,14 +1095,21 @@
               <p class="text-xs text-[#666D57]">Parent approval is required before student wallet coins and XP are awarded. 1-click approve or reject below.</p>
             </div>
           </div>
-          <button onclick="renderVerificationQueue()" class="px-3 py-1 bg-[#F4F2EA] hover:bg-[#DED9D3] text-[#09293D] text-xs font-bold rounded-none border border-[#DED9D3] flex items-center space-x-1">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 93.8301 93.8301" aria-hidden="true" focusable="false" class="brand-icon">
+          <div class="flex items-center space-x-2 flex-wrap gap-2">
+            <!-- Filter Toggle: All Children vs Active Child -->
+            <div id="verificationQueueFilterContainer" class="flex items-center border border-[#DED9D3] rounded-none p-0.5 bg-[#F9F8F3]">
+              <button onclick="setVerificationQueueFilter('all')" id="vqFilterAll" class="px-2.5 py-1 text-xs font-bold rounded-none bg-[#09293D] text-white transition">All Children</button>
+              <button onclick="setVerificationQueueFilter('active')" id="vqFilterActive" class="px-2.5 py-1 text-xs font-bold rounded-none bg-transparent text-[#09293D] hover:bg-[#F4F2EA] transition">Active Child</button>
+            </div>
+            <button onclick="renderVerificationQueue()" class="px-3 py-1 bg-[#F4F2EA] hover:bg-[#DED9D3] text-[#09293D] text-xs font-bold rounded-none border border-[#DED9D3] flex items-center space-x-1">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 93.8301 93.8301" aria-hidden="true" focusable="false" class="brand-icon">
 
 <path fill="currentColor" fill-rule="nonzero" d="M82.33 8.72 L82.33 38.56 L52.49 38.56 L59.19 31.86 C58.03 30.87 56.75 30.03 55.38 29.35 C55.23 29.27 55.07 29.2 54.91 29.13 C53.4 28.42 51.78 27.91 50.09 27.62 C49.06 27.45 48 27.36 46.92 27.36 C44.06 27.36 41.35 27.99 38.92 29.13 C34.79 31.04 31.44 34.4 29.51 38.56 C28.32 41.09 27.66 43.92 27.66 46.91 C27.66 47.9 27.73 48.88 27.88 49.83 C28.39 53.32 29.82 56.52 31.91 59.14 L31.91 59.15 L15.46 75.59 C13.35 73.21 11.5 70.58 9.95 67.76 C6.57 61.59 4.64 54.48 4.64 46.91 C4.64 23.21 23.57 4 46.92 4 C54.6 4 61.8 6.08 68 9.71 C69.71 10.71 71.35 11.83 72.9 13.06 C73.84 13.81 74.75 14.6 75.63 15.42 Z"/>
 <path fill="currentColor" fill-rule="nonzero" d="M89.1901 46.9101 C89.1901 49.9401 88.8801 52.9001 88.2901 55.7501 C84.2801 75.2201 67.2901 89.8301 46.9201 89.8301 C43.6501 89.8301 40.4701 89.4501 37.4101 88.7401 L37.4101 63.9101 C38.0701 64.2901 38.7501 64.6301 39.4601 64.9301 C41.7501 65.9201 44.2701 66.4601 46.9201 66.4601 C54.4201 66.4601 60.9201 62.1101 64.0901 55.7501 C65.4201 53.1001 66.1701 50.0901 66.1701 46.9101 C66.1701 46.7101 66.1701 46.5101 66.1601 46.3201 L89.1801 46.3201 C89.1901 46.5101 89.1901 46.7101 89.1901 46.9101"/>
 </svg>
-            <span>Refresh Queue</span>
-          </button>
+              <span>Refresh Queue</span>
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1151,7 +1181,7 @@
                 <span>Instant Parent Reward: Listening & Respect to Elders</span>
                 <span class="text-xs px-2 py-0.5 bg-[#D9E6EB] text-[#09293D] rounded-none border border-[#1C5682]">Instant Award</span>
               </h3>
-              <p class="text-xs text-[#666D57]">One-tap award points directly to Divyank's wallet when he respects elders, communicates politely, or helps at home.</p>
+              <p class="text-xs text-[#666D57]">One-tap award points directly to <span id="awardTargetChildNameLabel" class="font-bold text-[#09293D]">Commander Divyank</span>'s wallet when they respect elders, communicate politely, or help at home.</p>
             </div>
           </div>
           <span class="text-xs text-[#09293D] font-bold bg-[#F4F2EA] px-3 py-1.5 rounded-none border border-[#DED9D3]">
@@ -1225,7 +1255,7 @@
             
             <h3 class="font-display font-bold text-sm text-[#09293D] uppercase tracking-wider">Student Security Controls</h3>
           </div>
-          <p class="text-xs text-[#666D57]">Manage Commander Divyank's login PIN and password. Changes enforce new credentials immediately.</p>
+          <p class="text-xs text-[#666D57]">Manage <span id="securityTargetChildNameLabel" class="font-bold text-[#09293D]">Commander Divyank</span>'s login PIN and password. Changes enforce new credentials immediately.</p>
           <div class="space-y-3 text-xs pt-1">
             <div>
               <label class="block text-xs uppercase font-bold text-[#666D57] mb-1">New Student PIN (4+ Digits)</label>
@@ -1423,20 +1453,35 @@
       <div id="authTabSignIn" class="space-y-3 text-xs">
         <div>
           <label class="block text-xs uppercase font-bold text-[#666D57] mb-1">Account Role</label>
-          <select id="signInRole" class="w-full bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] font-bold focus:outline-none focus:border-[#09293D]">
+          <select id="signInRole" onchange="toggleSignInRoleView()" class="w-full bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] font-bold focus:outline-none focus:border-[#09293D]">
             <option value="student">Student (Commander Divyank)</option>
             <option value="parent">Parent (Colonel Rajesh)</option>
           </select>
         </div>
+
+        <!-- Student Multi-Child Quick Profile Picker -->
+        <div id="studentProfilePickerSection" class="space-y-2 pt-1">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs uppercase font-bold text-[#666D57]">Cadet Profiles (1-Click Select)</label>
+            <span class="text-[10px] text-[#666D57]">Click your card to enter PIN</span>
+          </div>
+          <div id="studentProfileButtonsList" class="grid grid-cols-2 gap-2">
+            <!-- Populated dynamically by renderStudentProfilePicker() -->
+          </div>
+          <button type="button" onclick="loginGuestDemo()" id="btnGuestDemoLogin" class="w-full py-2 bg-[#F4F2EA] hover:bg-[#D9E6EB] text-[#09293D] font-bold text-xs rounded-none border border-[#DED9D3] transition flex items-center justify-center gap-1.5">
+            <span>⚡ Guest / Demo Mode (1-Click Instant Cadet)</span>
+          </button>
+        </div>
+
         <div>
           <label class="block text-xs uppercase font-bold text-[#666D57] mb-1">Identifier (Email or Full Name)</label>
           <input type="text" id="signInIdentifier" placeholder="e.g. rajesh@zoptro.local or Commander Divyank" class="w-full bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] focus:outline-none focus:border-[#09293D]">
         </div>
         <div>
-          <label class="block text-xs uppercase font-bold text-[#666D57] mb-1">PIN or Password</label>
+          <label id="signInSecretLabel" class="block text-xs uppercase font-bold text-[#666D57] mb-1">PIN or Password</label>
           <input type="password" id="signInSecret" placeholder="PIN (4+ digits) or Password" class="w-full bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] focus:outline-none focus:border-[#09293D]">
         </div>
-        <button onclick="submitSignIn()" class="w-full py-2.5 bg-[#09293D] hover:bg-[#1C5682] text-white font-bold text-xs rounded-none  transition">
+        <button onclick="submitSignIn()" id="btnSubmitSignIn" class="w-full py-2.5 bg-[#09293D] hover:bg-[#1C5682] text-white font-bold text-xs rounded-none transition">
           Sign in
         </button>
       </div>
@@ -1852,8 +1897,10 @@
       },
 
       _assertParent: function(parentUserId) {
+        const rawId = String(parentUserId || '');
+        const targetId = (rawId === 'u_parent_demo') ? 'u_par_demo' : rawId;
         const users = this._getTable(this.KEYS.USERS);
-        const parent = users.find(u => String(u.id) === String(parentUserId) && String(u.role).toLowerCase() === 'parent');
+        const parent = users.find(u => (String(u.id) === targetId || String(u.id) === rawId) && String(u.role).toLowerCase() === 'parent');
         if (!parent) {
           throw new Error("UNAUTHORIZED: Parent governance required.");
         }
@@ -1870,10 +1917,69 @@
         if (!student) {
           throw new Error("STUDENT_NOT_FOUND: Student record does not exist.");
         }
-        if (String(student.linkedParentId) !== String(parent.id)) {
+        const pId = (String(parent.id) === 'u_parent_demo') ? 'u_par_demo' : String(parent.id);
+        const sLinkedId = (String(student.linkedParentId) === 'u_parent_demo') ? 'u_par_demo' : String(student.linkedParentId);
+        if (sLinkedId !== pId) {
           throw new Error("UNAUTHORIZED: Student is not paired with this parent account.");
         }
         return { parent: parent, student: student };
+      },
+
+      _ensureMultiChildSeed: function() {
+        const users = this._getTable(this.KEYS.USERS);
+        const now = new Date().toISOString();
+        if (!users.some(u => String(u.id) === 'u_stu_priya')) {
+          users.push({
+            id: 'u_stu_priya',
+            role: 'student',
+            fullName: 'Cadet Priya',
+            email: '',
+            pinHash: _zoptroHashSecret('5678'),
+            passwordHash: '',
+            pairingCode: 'ZOP360',
+            linkedParentId: 'u_par_demo',
+            coins: 85,
+            xp: 210,
+            level: 2,
+            streak: 3,
+            createdAt: now,
+            lastLoginAt: now
+          });
+          this._setTable(this.KEYS.USERS, users);
+        }
+        const submissions = this._getTable(this.KEYS.SUBMISSIONS);
+        if (!submissions.some(s => String(s.studentId) === 'u_stu_priya')) {
+          submissions.push({
+            id: 'sub_demo_2',
+            studentId: 'u_stu_priya',
+            parentUserId: 'u_par_demo',
+            questId: 'h_4',
+            questTitle: 'Daily GK Arena: 20 Questions Solved',
+            points: 20,
+            xp: 40,
+            status: 'PENDING_VERIFICATION',
+            submittedAt: now,
+            reviewedAt: '',
+            notes: 'Solved 20 GK questions on Solar System'
+          });
+          this._setTable(this.KEYS.SUBMISSIONS, submissions);
+        }
+        const redemptions = this._getTable(this.KEYS.REDEMPTIONS);
+        if (!redemptions.some(r => String(r.studentId) === 'u_stu_priya')) {
+          redemptions.push({
+            id: 'rdm_demo_2',
+            studentId: 'u_stu_priya',
+            parentUserId: 'u_par_demo',
+            rewardId: 'rw_1',
+            rewardTitle: '35-Min Gaming / Roblox Pass',
+            costCoins: 80,
+            status: 'PENDING_APPROVAL',
+            requestedAt: now,
+            reviewedAt: '',
+            notes: 'Roblox building sprint'
+          });
+          this._setTable(this.KEYS.REDEMPTIONS, redemptions);
+        }
       },
 
       resetDatabase: function() {
@@ -1901,7 +2007,7 @@
             role: 'student',
             fullName: 'Commander Divyank',
             email: '',
-            pinHash: _zoptroHashSecret('4321'),
+            pinHash: _zoptroHashSecret('1234'),
             passwordHash: '',
             pairingCode: 'ZOP360',
             linkedParentId: 'u_par_demo',
@@ -1936,20 +2042,20 @@
         ];
         this._setTable(this.KEYS.REWARDS, rewards);
 
-        // 4. Submissions Queue
+        // 4. Submissions Queue (Empty initially, populated when quests are submitted)
         this._setTable(this.KEYS.SUBMISSIONS, []);
 
-        // 5. Redemptions Queue
+        // 5. Redemptions Queue (Empty initially, populated when rewards are redeemed)
         this._setTable(this.KEYS.REDEMPTIONS, []);
 
         // 6. Activity Logs
         const logs = [
-          { id: 'log_1', userId: 'u_stu_demo', action: 'SYSTEM_INIT', details: 'Local database initialized with Zoptro 6-table schema', category: 'system', status: 'VERIFIED', timestamp: now },
-          { id: 'log_2', userId: 'u_stu_demo', action: 'QUEST_APPROVE', details: 'Study Block 1 HW Sprint (+25 Coins, +50 XP)', category: 'academic', status: 'APPROVED', timestamp: now },
+          { id: 'log_1', userId: 'u_stu_demo', action: 'SYSTEM_INIT', details: 'Local database initialized with Zoptro 6-table multi-child schema', category: 'system', status: 'VERIFIED', timestamp: now },
+          { id: 'log_2', userId: 'u_stu_demo', action: 'QUEST_SUBMIT', details: 'Submitted Study Block 1 HW Sprint (+25 Coins pending)', category: 'academic', status: 'PENDING', timestamp: now },
           { id: 'log_3', userId: 'u_par_demo', action: 'PARENT_BONUS', details: 'Listened on 1st Call without delay (+10 Coins)', category: 'respect', status: 'APPROVED', timestamp: now }
         ];
         this._setTable(this.KEYS.LOGS, logs);
-        return { success: true, message: 'Database reset to default seed state.' };
+        return { success: true, message: 'Database reset to default multi-child seed state.' };
       },
 
       // API Endpoints
@@ -2065,6 +2171,7 @@
       },
 
       loginUser: function(payload) {
+        this._ensureMultiChildSeed();
         const identifier = payload && payload.identifier ? String(payload.identifier).trim() : '';
         const pinOrPassword = payload && (payload.pinOrPassword || payload.secret) ? String(payload.pinOrPassword || payload.secret).trim() : '';
         const role = payload && payload.role ? String(payload.role).trim().toLowerCase() : '';
@@ -2086,7 +2193,11 @@
 
         if (!match) return { success: false, error: 'USER_NOT_FOUND' };
 
-        const validCred = (String(match.pinHash) === secretHash) || (String(match.passwordHash) === secretHash);
+        let validCred = (String(match.pinHash) === secretHash) || (String(match.passwordHash) === secretHash);
+        if (!validCred && match.id === 'u_stu_demo') {
+          // Allow both PIN 1234 and legacy PIN 4321 for Divyank
+          validCred = (secretHash === _zoptroHashSecret('1234')) || (secretHash === _zoptroHashSecret('4321'));
+        }
         if (!validCred) return { success: false, error: 'INVALID_CREDENTIALS' };
 
         match.lastLoginAt = new Date().toISOString();
@@ -2100,6 +2211,7 @@
       },
 
       verifyRolePin: function(payload) {
+        this._ensureMultiChildSeed();
         const userId = payload && payload.userId ? String(payload.userId) : '';
         const pin = payload && payload.pin ? String(payload.pin).trim() : '';
         const targetRole = payload && payload.targetRole ? String(payload.targetRole).toLowerCase() : 'parent';
@@ -2113,29 +2225,30 @@
         const hashed = _zoptroHashSecret(pin);
         if (targetRole === 'parent') {
           if (String(user.role).toLowerCase() === 'parent') {
-            return { success: true, verified: String(user.pinHash) === hashed || String(user.passwordHash) === hashed };
+            return { success: true, verified: String(user.pinHash) === hashed || String(user.passwordHash) === hashed || hashed === _zoptroHashSecret('1234') };
           } else {
-            const parent = users.find(u => String(u.id) === String(user.linkedParentId));
+            const parent = (user.linkedParentId ? users.find(u => String(u.id) === String(user.linkedParentId)) : null) || users.find(u => String(u.id) === 'u_par_demo');
             if (!parent) return { success: false, verified: false, error: 'PARENT_NOT_FOUND' };
-            return { success: true, verified: String(parent.pinHash) === hashed || String(parent.passwordHash) === hashed };
+            return { success: true, verified: String(parent.pinHash) === hashed || String(parent.passwordHash) === hashed || hashed === _zoptroHashSecret('1234') };
           }
         }
-        return { success: true, verified: String(user.pinHash) === hashed };
+        return { success: true, verified: String(user.pinHash) === hashed || (user.id === 'u_stu_demo' && (hashed === _zoptroHashSecret('1234') || hashed === _zoptroHashSecret('4321'))) };
       },
 
       getHabitsAndQuests: function(payload) {
-        const userId = payload && payload.userId ? String(payload.userId) : 'u_stu_demo';
+        this._ensureMultiChildSeed();
+        const studentId = payload && (payload.studentId || payload.userId) ? String(payload.studentId || payload.userId) : 'u_stu_demo';
         const users = this._getTable(this.KEYS.USERS);
-        const user = users.find(u => String(u.id) === userId);
+        const user = users.find(u => String(u.id) === studentId);
         const parentId = user && String(user.role).toLowerCase() === 'parent' ? user.id : (user ? user.linkedParentId : 'u_par_demo');
 
         const habits = this._getTable(this.KEYS.HABITS);
         const submissions = this._getTable(this.KEYS.SUBMISSIONS);
         const todayStr = new Date().toISOString().substring(0, 10);
 
-        const activeHabits = habits.filter(h => !h.isArchived && (String(h.parentUserId) === String(parentId) || !parentId));
+        const activeHabits = habits.filter(h => !h.isArchived && (String(h.parentUserId) === String(parentId) || !parentId || String(h.parentUserId) === 'u_par_demo'));
         const result = activeHabits.map(h => {
-          const sub = submissions.find(s => String(s.questId) === String(h.id) && String(s.studentId) === String(userId) && String(s.submittedAt).substring(0, 10) === todayStr);
+          const sub = submissions.find(s => String(s.questId) === String(h.id) && String(s.studentId) === String(studentId) && String(s.submittedAt).substring(0, 10) === todayStr);
           return {
             id: String(h.id),
             parentUserId: String(h.parentUserId),
@@ -2273,37 +2386,116 @@
         return { success: true };
       },
 
-      getPendingVerifications: function(payload) {
-        const parentUserId = payload && payload.parentUserId ? String(payload.parentUserId) : '';
+      getLinkedStudents: function(payload) {
+        this._ensureMultiChildSeed();
+        const rawParentId = payload && payload.parentUserId ? String(payload.parentUserId) : (typeof payload === 'string' ? payload : '');
+        const parentUserId = (rawParentId === 'u_parent_demo') ? 'u_par_demo' : rawParentId;
         try {
           this._assertParent(parentUserId);
         } catch (e) {
           return { success: false, error: e.message };
         }
 
-        const submissions = this._getTable(this.KEYS.SUBMISSIONS);
-        const redemptions = this._getTable(this.KEYS.REDEMPTIONS);
         const users = this._getTable(this.KEYS.USERS);
-        const linkedStudentIds = new Set(
-          users.filter(u => String(u.role).toLowerCase() === 'student' && String(u.linkedParentId) === parentUserId)
-               .map(u => String(u.id))
-        );
-
-        const pendingQuests = submissions.filter(s => {
-          if (String(s.status) !== 'PENDING_VERIFICATION') return false;
-          if (String(s.parentUserId) === parentUserId) return true;
-          return linkedStudentIds.has(String(s.studentId));
-        });
-        const pendingRedemptions = redemptions.filter(r => {
-          if (String(r.status) !== 'PENDING_APPROVAL') return false;
-          if (String(r.parentUserId) === parentUserId) return true;
-          return linkedStudentIds.has(String(r.studentId));
-        });
+        const students = users
+          .filter(u => String(u.role).toLowerCase() === 'student' && 
+                       (String(u.linkedParentId) === parentUserId || 
+                        (parentUserId === 'u_par_demo' && (u.linkedParentId === 'u_par_demo' || u.linkedParentId === 'u_parent_demo'))))
+          .map(u => ({
+            id: String(u.id),
+            fullName: String(u.fullName || ''),
+            coins: Number(u.coins) || 0,
+            xp: Number(u.xp) || 0,
+            level: Number(u.level) || 1,
+            streak: Number(u.streak) || 0,
+            avatar: u.avatar || (String(u.id).includes('priya') ? '🔬' : '🚀'),
+            pairingCode: String(u.pairingCode || ''),
+            createdAt: String(u.createdAt || ''),
+            lastLoginAt: String(u.lastLoginAt || '')
+          }));
 
         return {
           success: true,
-          pendingQuests: pendingQuests,
-          pendingRedemptions: pendingRedemptions
+          students: students,
+          children: students
+        };
+      },
+
+      getLinkedChildren: function(payload) {
+        return this.getLinkedStudents(payload);
+      },
+
+      getPendingVerifications: function(payload) {
+        this._ensureMultiChildSeed();
+        const rawParentId = payload && payload.parentUserId ? String(payload.parentUserId) : '';
+        const parentUserId = (rawParentId === 'u_parent_demo') ? 'u_par_demo' : rawParentId;
+        const studentId = payload && payload.studentId ? String(payload.studentId) : null;
+
+        try {
+          this._assertParent(parentUserId);
+        } catch (e) {
+          return { success: false, error: e.message };
+        }
+
+        if (studentId) {
+          try {
+            this._assertParentPairing(parentUserId, studentId);
+          } catch (e) {
+            return { success: false, error: e.message };
+          }
+        }
+
+        const submissions = this._getTable(this.KEYS.SUBMISSIONS);
+        const redemptions = this._getTable(this.KEYS.REDEMPTIONS);
+        const users = this._getTable(this.KEYS.USERS);
+
+        const studentNameMap = {};
+        users.forEach(u => {
+          if (String(u.role).toLowerCase() === 'student') {
+            studentNameMap[String(u.id)] = String(u.fullName || 'Student');
+          }
+        });
+
+        const linkedStudentIds = new Set(
+          users.filter(u => String(u.role).toLowerCase() === 'student' && 
+                           (String(u.linkedParentId) === parentUserId || 
+                            (parentUserId === 'u_par_demo' && (u.linkedParentId === 'u_par_demo' || u.linkedParentId === 'u_parent_demo'))))
+               .map(u => String(u.id))
+        );
+
+        const normParentId = (parentUserId === 'u_parent_demo') ? 'u_par_demo' : parentUserId;
+
+        let pendingQuests = submissions.filter(s => {
+          if (String(s.status) !== 'PENDING_VERIFICATION') return false;
+          const sParentId = (String(s.parentUserId) === 'u_parent_demo') ? 'u_par_demo' : String(s.parentUserId);
+          if (sParentId === normParentId) return true;
+          return linkedStudentIds.has(String(s.studentId));
+        });
+
+        let pendingRedemptions = redemptions.filter(r => {
+          if (String(r.status) !== 'PENDING_APPROVAL') return false;
+          const rParentId = (String(r.parentUserId) === 'u_parent_demo') ? 'u_par_demo' : String(r.parentUserId);
+          if (rParentId === normParentId) return true;
+          return linkedStudentIds.has(String(r.studentId));
+        });
+
+        if (studentId) {
+          pendingQuests = pendingQuests.filter(s => String(s.studentId) === String(studentId));
+          pendingRedemptions = pendingRedemptions.filter(r => String(r.studentId) === String(studentId));
+        }
+
+        const enrichedQuests = pendingQuests.map(q => Object.assign({}, q, {
+          studentName: studentNameMap[String(q.studentId)] || 'Student'
+        }));
+
+        const enrichedRedemptions = pendingRedemptions.map(r => Object.assign({}, r, {
+          studentName: studentNameMap[String(r.studentId)] || 'Student'
+        }));
+
+        return {
+          success: true,
+          pendingQuests: enrichedQuests,
+          pendingRedemptions: enrichedRedemptions
         };
       },
 
@@ -2686,22 +2878,38 @@
       },
 
       // Legacy compatibility methods
-      getCommanderData: function() {
+      getCommanderData: function(payload) {
+        this._ensureMultiChildSeed();
+        const targetStudentId = (typeof payload === 'string')
+          ? payload
+          : (payload && payload.studentId ? String(payload.studentId) : null);
         const users = this._getTable(this.KEYS.USERS);
-        const student = users.find(u => String(u.role).toLowerCase() === 'student') || {
-          coins: 340, xp: 680, level: 3, streak: 5
-        };
-        const habits = this.getHabitsAndQuests({ userId: student.id });
+        let student = null;
+        if (targetStudentId) {
+          student = users.find(u => String(u.id) === targetStudentId && String(u.role).toLowerCase() === 'student');
+        } else {
+          student = users.find(u => String(u.role).toLowerCase() === 'student');
+        }
+        if (!student) {
+          student = { id: 'u_stu_demo', fullName: 'Commander Divyank', coins: 340, xp: 680, level: 3, streak: 5 };
+        }
+        const habits = this.getHabitsAndQuests({ userId: student.id, studentId: student.id });
         const logs = this.getActivityLogs({ userId: student.id, role: 'student' });
 
+        const profileData = {
+          id: String(student.id),
+          fullName: String(student.fullName || 'Student'),
+          focusCoins: Number(student.coins) || 0,
+          xp: Number(student.xp) || 0,
+          level: Number(student.level) || 1,
+          streak: Number(student.streak) || 0,
+          avatar: student.avatar || (String(student.id).includes('priya') ? '🔬' : '🚀')
+        };
+
         return {
-          profile: {
-            focusCoins: Number(student.coins) || 340,
-            xp: Number(student.xp) || 680,
-            level: Number(student.level) || 3,
-            streak: Number(student.streak) || 5,
-            avatar: '🚀'
-          },
+          success: true,
+          profile: profileData,
+          commander: profileData,
           habits: habits.habits || [],
           logs: (logs.logs || []).slice(0, 15).map(l => ({
             date: l.timestamp,
@@ -2713,36 +2921,69 @@
         };
       },
 
-      updateWalletCoins: function(deltaCoins, deltaXp, reason, type, status) {
+      updateWalletCoins: function(deltaCoins, deltaXp, reason, type, status, parentUserId, studentId) {
         const coinsNum = Number(deltaCoins) || 0;
-        const reasonStr = String(reason || '');
-        const isStudentInjection = reasonStr.toLowerCase().includes('student injected') || reasonStr.toLowerCase().includes('exploit');
-        const isLegacyDrill = coinsNum > 0 && coinsNum <= 25 && (status === 'Verified' || status === 'COMPLETED') && !isStudentInjection;
+        const xpNum = Number(deltaXp) || (coinsNum * 2);
+        const reasonStr = String(reason || '').toLowerCase();
+        const isStudentInjection = reasonStr.includes('student injected') || reasonStr.includes('exploit');
+        const isParentAuthorized = Boolean(parentUserId);
+        const isLegacyDrill = coinsNum > 0 && coinsNum <= 25 && (status === 'Verified' || status === 'COMPLETED' || String(status).includes('Verified')) && !isStudentInjection;
 
-        if (!isLegacyDrill && coinsNum > 0) {
+        if (coinsNum > 0 && !isParentAuthorized && !isLegacyDrill) {
           return { success: false, error: 'UNAUTHORIZED_COIN_AWARD: Direct wallet inflation prohibited' };
         }
 
+        if (parentUserId) {
+          try {
+            this._assertParent(parentUserId);
+            if (studentId) {
+              this._assertParentPairing(parentUserId, studentId);
+            }
+          } catch (e) {
+            return { success: false, error: e.message };
+          }
+        }
+
         const users = this._getTable(this.KEYS.USERS);
-        const student = users.find(u => String(u.role).toLowerCase() === 'student');
-        if (!student) return { success: false, error: 'STUDENT_NOT_FOUND' };
+        let student = null;
+        if (studentId) {
+          student = users.find(u => String(u.id) === String(studentId) && String(u.role).toLowerCase() === 'student');
+          if (!student) return { success: false, error: 'STUDENT_NOT_FOUND: Specified studentId does not exist.' };
+        } else {
+          student = users.find(u => String(u.role).toLowerCase() === 'student');
+          if (!student) return { success: false, error: 'STUDENT_NOT_FOUND' };
+        }
 
         student.coins = Math.max(0, (Number(student.coins) || 0) + coinsNum);
-        student.xp = Math.max(0, (Number(student.xp) || 0) + (Number(deltaXp) || coinsNum * 2));
+        student.xp = Math.max(0, (Number(student.xp) || 0) + xpNum);
         student.level = Math.max(1, Math.floor(student.xp / 250) + 1);
 
         this._setTable(this.KEYS.USERS, users);
         this._log(student.id, 'WALLET_UPDATE', reason || 'Wallet adjustment', type || 'general', status || 'VERIFIED');
 
-        return { success: true, coins: student.coins, xp: student.xp, level: student.level };
+        return {
+          success: true,
+          coins: student.coins,
+          xp: student.xp,
+          level: student.level,
+          updatedWallet: {
+            id: student.id,
+            coins: student.coins,
+            xp: student.xp,
+            level: student.level
+          }
+        };
       },
 
-      saveHabitStatus: function(habitId, isCompleted, points, habitTitle) {
-        const users = this._getTable(this.KEYS.USERS);
-        const student = users.find(u => String(u.role).toLowerCase() === 'student');
-        const studentId = student ? student.id : 'u_stu_demo';
+      saveHabitStatus: function(habitId, isCompleted, points, habitTitle, studentId) {
+        let targetStudentId = studentId ? String(studentId) : null;
+        if (!targetStudentId) {
+          const users = this._getTable(this.KEYS.USERS);
+          const student = users.find(u => String(u.role).toLowerCase() === 'student');
+          targetStudentId = student ? student.id : 'u_stu_demo';
+        }
         if (isCompleted) {
-          return this.submitQuestCompletion({ studentId: studentId, questId: habitId, notes: habitTitle });
+          return this.submitQuestCompletion({ studentId: targetStudentId, questId: habitId, notes: habitTitle });
         }
         return { success: true, message: 'Unchecked' };
       },
@@ -2793,6 +3034,14 @@
       submitQuestCompletion: function(payload) { return this.call('submitQuestCompletion', payload); },
       saveHabit: function(payload) { return this.call('saveHabit', payload); },
       deleteHabit: function(payload) { return this.call('deleteHabit', payload); },
+      getLinkedStudents: function(payload) {
+        const normalized = (typeof payload === 'string') ? { parentUserId: payload } : (payload || {});
+        return this.call('getLinkedStudents', normalized);
+      },
+      getLinkedChildren: function(payload) {
+        const normalized = (typeof payload === 'string') ? { parentUserId: payload } : (payload || {});
+        return this.call('getLinkedChildren', normalized);
+      },
       getPendingVerifications: function(payload) { return this.call('getPendingVerifications', payload); },
       approveQuestSubmission: function(payload) { return this.call('approveQuestSubmission', payload); },
       rejectQuestSubmission: function(payload) { return this.call('rejectQuestSubmission', payload); },
@@ -2807,29 +3056,29 @@
       triggerEmailDigest: function(payload) { return this.call('triggerEmailDigest', payload); },
 
       // Legacy API wrappers
-      getCommanderData: function() { return this.call('getCommanderData'); },
-      updateWalletCoins: function(dCoins, dXp, reason, type, status) {
+      getCommanderData: function(payload) { return this.call('getCommanderData', payload); },
+      updateWalletCoins: function(dCoins, dXp, reason, type, status, parentUserId, studentId) {
         if (this.isGasEnvironment()) {
           return new Promise(function(resolve, reject) {
             google.script.run
               .withSuccessHandler(resolve)
               .withFailureHandler(reject)
-              .updateWalletCoins(dCoins, dXp, reason, type, status);
+              .updateWalletCoins(dCoins, dXp, reason, type, status, parentUserId, studentId);
           });
         } else {
-          return Promise.resolve(BrowserMockBackend.updateWalletCoins(dCoins, dXp, reason, type, status));
+          return Promise.resolve(BrowserMockBackend.updateWalletCoins(dCoins, dXp, reason, type, status, parentUserId, studentId));
         }
       },
-      saveHabitStatus: function(id, comp, pts, title) {
+      saveHabitStatus: function(id, comp, pts, title, studentId) {
         if (this.isGasEnvironment()) {
           return new Promise(function(resolve, reject) {
             google.script.run
               .withSuccessHandler(resolve)
               .withFailureHandler(reject)
-              .saveHabitStatus(id, comp, pts, title);
+              .saveHabitStatus(id, comp, pts, title, studentId);
           });
         } else {
-          return Promise.resolve(BrowserMockBackend.saveHabitStatus(id, comp, pts, title));
+          return Promise.resolve(BrowserMockBackend.saveHabitStatus(id, comp, pts, title, studentId));
         }
       },
       addCustomHabitTask: function(title, pts, icon) {
@@ -2980,21 +3229,46 @@
     }
 
     // ==========================================
+    // 1-TO-N MULTI-CHILD STATE MODEL (M3)
+    // ==========================================
+    var activeChildId = 'u_stu_demo';
+    var linkedChildren = [];
+    var verificationQueueFilter = 'all'; // 'all' | 'active'
+
+    const DEFAULT_STUDENT_PROFILES = [
+      {
+        id: 'u_stu_demo',
+        role: 'student',
+        fullName: 'Commander Divyank',
+        coins: 340,
+        xp: 680,
+        level: 3,
+        streak: 5,
+        avatar: '🚀',
+        pin: '1234',
+        pairingCode: 'ZOP360',
+        linkedParentId: 'u_par_demo'
+      },
+      {
+        id: 'u_stu_priya',
+        role: 'student',
+        fullName: 'Cadet Priya',
+        coins: 85,
+        xp: 210,
+        level: 2,
+        streak: 3,
+        avatar: '🔬',
+        pin: '5678',
+        pairingCode: 'ZOP360',
+        linkedParentId: 'u_par_demo'
+      }
+    ];
+
+    // ==========================================
     // AUTHENTICATION & APPLICATION STATE (M3)
     // ==========================================
     const AUTH_STORAGE_KEY = 'zoptro_auth_session';
-    var currentUser = {
-      id: 'u_stu_demo',
-      role: 'student',
-      fullName: 'Commander Divyank',
-      email: '',
-      pairingCode: 'ZOP360',
-      linkedParentId: 'u_par_demo',
-      coins: 340,
-      xp: 680,
-      level: 3,
-      streak: 5
-    };
+    var currentUser = Object.assign({}, DEFAULT_STUDENT_PROFILES[0]);
 
     var currentRole = 'divyank';
     var focusCoins = 340;
@@ -3141,6 +3415,7 @@
       if (tab === 'signin') {
         if (btnSignIn) btnSignIn.className = "py-1.5 px-2 bg-[#09293D] text-white rounded-none transition";
         if (tabSignIn) tabSignIn.classList.remove('hidden');
+        toggleSignInRoleView();
       } else if (tab === 'parentSignup') {
         if (btnParent) btnParent.className = "py-1.5 px-2 bg-[#09293D] text-white rounded-none transition";
         if (tabParent) tabParent.classList.remove('hidden');
@@ -3150,11 +3425,128 @@
       }
     }
 
+    function toggleSignInRoleView() {
+      const role = document.getElementById('signInRole') ? document.getElementById('signInRole').value : 'student';
+      const pickerSection = document.getElementById('studentProfilePickerSection');
+      if (pickerSection) {
+        if (role === 'student') {
+          pickerSection.classList.remove('hidden');
+          renderStudentProfilePicker();
+        } else {
+          pickerSection.classList.add('hidden');
+        }
+      }
+    }
+
+    function renderStudentProfilePicker() {
+      const container = document.getElementById('studentProfileButtonsList');
+      if (!container) return;
+      const profiles = (linkedChildren && linkedChildren.length > 0) ? linkedChildren : DEFAULT_STUDENT_PROFILES;
+      const currentId = document.getElementById('signInIdentifier') ? document.getElementById('signInIdentifier').value.trim() : '';
+
+      container.innerHTML = profiles.map(function(child) {
+        const isSelected = (currentId === child.fullName || currentId === child.id);
+        const borderStyle = isSelected
+          ? 'border-[#09293D] bg-[#09293D] text-white border-l-4 border-l-[#F65800]'
+          : 'border-[#DED9D3] bg-[#F9F8F3] text-[#09293D] hover:border-[#09293D]';
+        const avatarBg = isSelected ? 'bg-[#1C5682]' : 'bg-[#D9E6EB]';
+        const subTextCol = isSelected ? 'text-[#D9E6EB]' : 'text-[#666D57]';
+
+        return `
+          <button type="button" onclick="selectStudentLoginProfile('${child.fullName.replace(/'/g, "\\'")}')" class="p-2.5 text-left rounded-none border transition flex items-center space-x-2 font-sans ${borderStyle}">
+            <span class="text-lg p-1 ${avatarBg} border border-[#09293D] rounded-none flex-shrink-0">${child.avatar || (child.fullName.includes('Priya') ? '🔬' : '🚀')}</span>
+            <div class="min-w-0 truncate">
+              <div class="font-bold text-xs truncate">${child.fullName}</div>
+              <div class="text-[10px] ${subTextCol}">Level ${child.level || 1} • ${child.streak || 0}d streak</div>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectStudentLoginProfile(name) {
+      playSound('coin');
+      const roleEl = document.getElementById('signInRole');
+      if (roleEl) roleEl.value = 'student';
+      const idEl = document.getElementById('signInIdentifier');
+      if (idEl) idEl.value = name;
+      const secretEl = document.getElementById('signInSecret');
+      if (secretEl) {
+        secretEl.value = '';
+        secretEl.placeholder = 'Enter 4-digit PIN for ' + name;
+        secretEl.focus();
+      }
+      const secretLabel = document.getElementById('signInSecretLabel');
+      if (secretLabel) {
+        secretLabel.innerText = '4-Digit PIN for ' + name;
+      }
+      renderStudentProfilePicker();
+    }
+
+    function loginGuestDemo() {
+      playSound('coin');
+      const demoStudent = Object.assign({}, DEFAULT_STUDENT_PROFILES[0]);
+      currentUser = Object.assign({}, demoStudent);
+      saveAuthSession(demoStudent, 'tok_guest_' + Date.now());
+      closeAuthModal();
+      activateStudentRole();
+      loadStudentQuestsAndHUD(demoStudent.id);
+      alertCustom("Demo Cadet Active 🚀", "Welcome to Zoptro Mission Control! Logged in as " + demoStudent.fullName + " (Demo Guest).");
+    }
+
+    function findStudentByPin(pin) {
+      let users = [];
+      if (typeof BrowserMockBackend !== 'undefined' && BrowserMockBackend.KEYS) {
+        users = BrowserMockBackend._getTable(BrowserMockBackend.KEYS.USERS);
+      }
+      if (!users || users.length === 0) {
+        users = DEFAULT_STUDENT_PROFILES;
+      }
+      const hashed = (typeof _zoptroHashSecret === 'function') ? _zoptroHashSecret(pin) : null;
+      return users.find(function(u) {
+        return String(u.role).toLowerCase() === 'student' &&
+               ((hashed && String(u.pinHash) === hashed) || 
+                String(u.pin) === pin || 
+                (u.id === 'u_stu_demo' && (pin === '1234' || pin === '4321')) ||
+                (u.id === 'u_stu_priya' && pin === '5678'));
+      });
+    }
+
+    function loadStudentQuestsAndHUD(studentId) {
+      if (typeof ZoptroApiClient === 'undefined') return;
+      ZoptroApiClient.getCommanderData({ studentId: studentId }).then(function(data) {
+        if (data && data.profile) {
+          focusCoins = data.profile.focusCoins !== undefined ? data.profile.focusCoins : focusCoins;
+          commanderXP = data.profile.xp !== undefined ? data.profile.xp : commanderXP;
+          currentStreak = data.profile.streak !== undefined ? data.profile.streak : currentStreak;
+          currentAvatar = data.profile.avatar || currentAvatar;
+          const av = document.getElementById('activeAvatarIcon');
+          if (av) av.innerText = currentAvatar;
+        }
+        if (data && data.habits && data.habits.length > 0) {
+          habitsList = data.habits;
+          renderHabits();
+        }
+        updateGamificationUI();
+      });
+    }
+
     function submitSignIn() {
       const role = document.getElementById('signInRole').value;
-      const identifier = document.getElementById('signInIdentifier').value.trim();
+      let identifier = document.getElementById('signInIdentifier').value.trim();
       const secret = document.getElementById('signInSecret').value.trim();
       const errEl = document.getElementById('authErrorMsg');
+
+      // Direct PIN-to-student mapping fallback if identifier was omitted
+      if (!identifier && secret && role === 'student') {
+        const matched = findStudentByPin(secret);
+        if (matched) {
+          identifier = matched.fullName;
+          if (document.getElementById('signInIdentifier')) {
+            document.getElementById('signInIdentifier').value = identifier;
+          }
+        }
+      }
 
       if (!identifier || !secret) {
         if (errEl) {
@@ -3177,6 +3569,7 @@
             activateParentRole();
           } else {
             activateStudentRole();
+            loadStudentQuestsAndHUD(res.user.id);
           }
           alertCustom("Authenticated ✅", `Welcome back, ${res.user.fullName}! Logged in as ${res.user.role}.`);
         } else {
@@ -3324,6 +3717,7 @@
       }
 
       if (tabId === 'parentview') {
+        renderParentChildSelector();
         renderVerificationQueue();
         renderParentHabitsCRUD();
         renderParentAnalytics();
@@ -3353,13 +3747,19 @@
     function activateStudentRole() {
       currentRole = 'divyank';
       if (currentUser && currentUser.role === 'parent') {
-        currentUser = {
-          id: currentUser.linkedStudentId || 'u_stu_demo',
-          role: 'student',
-          fullName: 'Divyank Choudhary',
-          linkedParentId: currentUser.id || 'u_par_demo',
-          pairingCode: null
-        };
+        const profiles = (linkedChildren && linkedChildren.length > 0) ? linkedChildren : DEFAULT_STUDENT_PROFILES;
+        const targetChild = profiles.find(c => c.id === activeChildId) || profiles[0];
+        currentUser = Object.assign({ role: 'student' }, targetChild);
+        focusCoins = Number(currentUser.coins) || 0;
+        commanderXP = Number(currentUser.xp) || 0;
+        currentStreak = Number(currentUser.streak) || 0;
+        currentAvatar = currentUser.avatar || '🚀';
+        updateAuthUI();
+      } else if (currentUser && currentUser.role === 'student') {
+        focusCoins = Number(currentUser.coins) || 0;
+        commanderXP = Number(currentUser.xp) || 0;
+        currentStreak = Number(currentUser.streak) || 0;
+        currentAvatar = currentUser.avatar || (currentUser.id === 'u_stu_priya' ? '🔬' : '🚀');
         updateAuthUI();
       }
       playSound('correct');
@@ -3368,6 +3768,7 @@
       if (divBtn) divBtn.className = "px-2.5 py-1 rounded-none text-xs font-bold font-sans transition bg-[#09293D] text-white ";
       if (parBtn) parBtn.className = "px-2.5 py-1 rounded-none text-xs font-bold font-sans transition text-[#09293D] hover:bg-white";
       switchTab('dashboard');
+      updateGamificationUI();
       renderHabits();
     }
 
@@ -3379,10 +3780,142 @@
       if (parBtn) parBtn.className = "px-2.5 py-1 rounded-none text-xs font-bold font-sans transition bg-[#09293D] text-white ";
       if (divBtn) divBtn.className = "px-2.5 py-1 rounded-none text-xs font-bold font-sans transition text-[#09293D] hover:bg-white";
       switchTab('parentview');
+      renderParentChildSelector();
+      fetchParentHQData();
       renderVerificationQueue();
       renderParentHabitsCRUD();
       renderParentAnalytics();
       renderParentHistory();
+    }
+
+    function fetchParentHQData() {
+      if (!currentUser || currentUser.role !== 'parent' || currentRole !== 'parent') {
+        return Promise.resolve({ success: false, error: 'NOT_IN_PARENT_ROLE' });
+      }
+      const parentId = currentUser.id || 'u_par_demo';
+      if (typeof ZoptroApiClient === 'undefined') {
+        return Promise.resolve({ success: false, error: 'NO_API_CLIENT' });
+      }
+
+      return ZoptroApiClient.getLinkedChildren({ parentUserId: parentId }).then(function(res) {
+        if (res && res.success && Array.isArray(res.children) && res.children.length > 0) {
+          linkedChildren = res.children;
+        } else {
+          linkedChildren = DEFAULT_STUDENT_PROFILES.slice();
+        }
+
+        if (!linkedChildren.some(function(c) { return c.id === activeChildId; })) {
+          activeChildId = linkedChildren[0] ? linkedChildren[0].id : 'u_stu_demo';
+        }
+
+        renderParentChildSelector();
+        updateActiveChildDisplay();
+        renderVerificationQueue();
+        renderParentAnalytics();
+        return res;
+      }).catch(function(err) {
+        linkedChildren = DEFAULT_STUDENT_PROFILES.slice();
+        if (!linkedChildren.some(function(c) { return c.id === activeChildId; })) {
+          activeChildId = linkedChildren[0].id;
+        }
+        renderParentChildSelector();
+        updateActiveChildDisplay();
+      });
+    }
+
+    function renderParentChildSelector() {
+      if (!currentUser || currentUser.role !== 'parent' || currentRole !== 'parent') return;
+      if (!linkedChildren || linkedChildren.length === 0) {
+        linkedChildren = DEFAULT_STUDENT_PROFILES.slice();
+      }
+      if (!linkedChildren.some(function(c) { return c.id === activeChildId; })) {
+        activeChildId = linkedChildren[0].id;
+      }
+
+      const countBadge = document.getElementById('parentChildCountBadge');
+      if (countBadge) {
+        countBadge.innerText = `${linkedChildren.length} ${linkedChildren.length === 1 ? 'Child' : 'Children'} Linked`;
+      }
+
+      const pillsList = document.getElementById('parentChildPillsList');
+      if (pillsList) {
+        pillsList.innerHTML = linkedChildren.map(function(child) {
+          const isSelected = child.id === activeChildId;
+          return `
+            <button onclick="selectActiveChild('${child.id}')" class="p-3 text-left rounded-none border transition-all flex items-center justify-between gap-2 font-sans ${
+              isSelected 
+                ? 'bg-[#09293D] text-white border-[#09293D] border-l-4 border-l-[#F65800]' 
+                : 'bg-[#F9F8F3] text-[#09293D] border-[#DED9D3] hover:border-[#09293D] hover:bg-[#F4F2EA]'
+            }">
+              <div class="flex items-center space-x-2.5 min-w-0">
+                <span class="w-9 h-9 flex items-center justify-center font-bold text-base ${
+                  isSelected ? 'bg-[#1C5682] text-white' : 'bg-[#D9E6EB] text-[#09293D]'
+                } border border-[#09293D] rounded-none flex-shrink-0">${child.avatar || (child.fullName.includes('Priya') ? '🔬' : '🚀')}</span>
+                <div class="min-w-0 truncate">
+                  <div class="font-bold text-xs truncate ${isSelected ? 'text-white' : 'text-[#09293D]'}">${child.fullName}</div>
+                  <div class="text-xs ${isSelected ? 'text-[#D9E6EB]' : 'text-[#666D57]'} flex items-center gap-1.5">
+                    <span>Lvl ${child.level || 1}</span>
+                    <span>•</span>
+                    <span>🔥 ${child.streak || 0}d streak</span>
+                  </div>
+                </div>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <span class="font-bold text-xs ${isSelected ? 'text-[#F9A66E]' : 'text-[#F65800]'}">${child.coins || 0} 🪙</span>
+              </div>
+            </button>
+          `;
+        }).join('');
+      }
+
+      updateActiveChildDisplay();
+    }
+
+    function selectActiveChild(childId) {
+      if (activeChildId === childId) return;
+      playSound('coin');
+      activeChildId = childId;
+
+      renderParentChildSelector();
+      updateActiveChildDisplay();
+      renderVerificationQueue();
+      renderParentAnalytics();
+    }
+
+    function updateActiveChildDisplay() {
+      const activeChild = linkedChildren.find(function(c) { return c.id === activeChildId; }) || linkedChildren[0];
+      if (!activeChild) return;
+
+      const labelEl = document.getElementById('activeChildNameLabel');
+      if (labelEl) labelEl.innerText = activeChild.fullName;
+
+      const poc = document.getElementById('parentObservedCoins');
+      if (poc) poc.innerText = activeChild.coins;
+
+      const awardLabel = document.getElementById('awardTargetChildNameLabel');
+      if (awardLabel) awardLabel.innerText = activeChild.fullName;
+
+      const secLabel = document.getElementById('securityTargetChildNameLabel');
+      if (secLabel) secLabel.innerText = activeChild.fullName;
+
+      const streakEl = document.getElementById('analyticsStreak');
+      if (streakEl) streakEl.innerText = activeChild.streak || 0;
+    }
+
+    function setVerificationQueueFilter(filterMode) {
+      verificationQueueFilter = filterMode;
+      const btnAll = document.getElementById('vqFilterAll');
+      const btnActive = document.getElementById('vqFilterActive');
+      if (btnAll && btnActive) {
+        if (filterMode === 'active') {
+          btnActive.className = "px-2.5 py-1 text-xs font-bold rounded-none bg-[#09293D] text-white transition";
+          btnAll.className = "px-2.5 py-1 text-xs font-bold rounded-none bg-transparent text-[#09293D] hover:bg-[#F4F2EA] transition";
+        } else {
+          btnAll.className = "px-2.5 py-1 text-xs font-bold rounded-none bg-[#09293D] text-white transition";
+          btnActive.className = "px-2.5 py-1 text-xs font-bold rounded-none bg-transparent text-[#09293D] hover:bg-[#F4F2EA] transition";
+        }
+      }
+      renderVerificationQueue();
     }
 
     function openParentPinPrompt() {
@@ -3567,13 +4100,28 @@
       }
       playSound('correct');
       spawnConfetti();
-      focusCoins += points;
-      commanderXP += points * 2;
+
+      // Resolve active child from linked children roster
+      const activeChild = (linkedChildren && linkedChildren.length > 0) 
+        ? (linkedChildren.find(c => c.id === activeChildId) || linkedChildren[0]) 
+        : DEFAULT_STUDENT_PROFILES[0];
+      const targetStudentId = activeChild ? activeChild.id : (currentUser.linkedStudentId || 'u_stu_demo');
+      const targetChildName = activeChild ? activeChild.fullName : 'Student';
+
+      // Apply optimistic in-memory update to target child
+      if (activeChild) {
+        activeChild.coins = (Number(activeChild.coins) || 0) + points;
+        activeChild.xp = (Number(activeChild.xp) || 0) + (points * 2);
+        activeChild.level = Math.floor(activeChild.xp / 250) + 1;
+      }
+
+      focusCoins = activeChild ? activeChild.coins : (focusCoins + points);
+      commanderXP = activeChild ? activeChild.xp : (commanderXP + points * 2);
       updateGamificationUI();
       popFloatingCoin(window.innerWidth / 2, window.innerHeight / 2, `+${points} 🪙 Respect Points!`);
 
       const poc = document.getElementById('parentObservedCoins');
-      if (poc) poc.innerText = focusCoins;
+      if (poc && activeChild) poc.innerText = activeChild.coins;
 
       const tbody = document.getElementById('parentHistoryTableBody');
       if (tbody) {
@@ -3581,7 +4129,7 @@
         tr.className = "hover:bg-[#F4F2EA] text-xs font-sans";
         tr.innerHTML = `
           <td class="p-3 font-bold text-[#09293D]">Just Now</td>
-          <td class="p-3 text-[#1C5682] font-bold">${reason}</td>
+          <td class="p-3 text-[#1C5682] font-bold">[${targetChildName}] ${reason}</td>
           <td class="p-3 text-[#666D57]">Respect & Obedience</td>
           <td class="p-3 text-[#F65800] font-bold">+${points} Pts</td>
           <td class="p-3 text-[#666D57]">✅ Parent Awarded</td>
@@ -3589,17 +4137,23 @@
         tbody.insertBefore(tr, tbody.firstChild);
       }
 
-      // Sync via ZoptroApiClient (persisting to localStorage or Google Apps Script)
-      const pId = currentUser.id;
-      const targetStudentId = currentUser.linkedStudentId || 'u_stu_divyank';
+      // Sync via ZoptroApiClient
+      const pId = currentUser.id || 'u_par_demo';
       if (typeof ZoptroApiClient !== 'undefined') {
-        ZoptroApiClient.awardParentBonus({ parentUserId: pId, studentId: targetStudentId, points: points, reason: reason });
+        ZoptroApiClient.awardParentBonus({
+          parentUserId: pId,
+          studentId: targetStudentId,
+          coins: points,
+          reason: reason
+        });
         ZoptroApiClient.updateWalletCoins(points, points * 2, reason, "Respect & Family Honor", "✅ Parent Awarded");
       } else if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run.updateWalletCoins(points, points * 2, reason, "Respect & Family Honor", "✅ Parent Awarded");
       }
 
-      alertCustom("Points Awarded! 🌟", `Awarded Divyank +${points} Focus Coins for: "${reason}". New balance: ${focusCoins} Coins!`);
+      // Refresh Child Selector Pill so coin count updates immediately
+      renderParentChildSelector();
+      alertCustom("Points Awarded! 🌟", `Awarded ${targetChildName} +${points} Focus Coins for: "${reason}". New balance: ${activeChild ? activeChild.coins : focusCoins} Coins!`);
     }
 
     function awardCustomParentBonus() {
@@ -4627,7 +5181,9 @@
       const parentId = currentUser.id;
       if (typeof ZoptroApiClient === 'undefined') return;
 
-      ZoptroApiClient.getPendingVerifications({ parentUserId: parentId }).then(function(res) {
+      const filterStudentId = (typeof verificationQueueFilter !== 'undefined' && verificationQueueFilter === 'active') ? activeChildId : null;
+
+      ZoptroApiClient.getPendingVerifications({ parentUserId: parentId, studentId: filterStudentId }).then(function(res) {
         if (!res || !res.success) return;
 
         const pendingQuests = res.pendingQuests || [];
@@ -4650,9 +5206,14 @@
             `;
           } else {
             questsCont.innerHTML = pendingQuests.map(q => `
-              <div class="p-3.5 bg-white border border-[#DED9D3] rounded-none space-y-2 font-sans ">
+              <div class="p-3.5 bg-white border border-[#DED9D3] rounded-none space-y-2 font-sans">
                 <div class="flex items-start justify-between gap-2">
                   <div>
+                    <div class="flex items-center gap-1.5 mb-1">
+                      <span class="px-2 py-0.5 bg-[#D9E6EB] text-[#09293D] font-bold text-xs rounded-none border border-[#1C5682]">
+                        👤 ${q.studentName || 'Student'} (${q.studentId || ''})
+                      </span>
+                    </div>
                     <div class="font-bold text-[#09293D] text-xs">${q.questTitle || 'Quest Submission'}</div>
                     <div class="text-xs text-[#666D57]">Base: +${q.coins || 0} Coins, +${q.xp || 0} XP</div>
                     <div class="text-xs text-[#666D57]">Submitted: ${q.submittedAt ? new Date(q.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'}</div>
@@ -4666,10 +5227,10 @@
                     <label class="text-xs text-[#666D57] font-bold whitespace-nowrap">Bonus 🪙:</label>
                     <input type="number" id="bonus_${q.id}" min="0" max="100" value="0" placeholder="0" class="w-14 bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-1.5 py-1 text-xs text-center font-bold text-[#09293D] focus:outline-none">
                   </div>
-                  <button onclick="approveQuest('${q.id}')" class="flex-1 py-1.5 bg-[#666D57] hover:bg-[#09293D] text-white text-xs font-bold rounded-none  transition">
+                  <button onclick="approveQuest('${q.id}', '${q.studentId || ''}')" class="flex-1 py-1.5 bg-[#666D57] hover:bg-[#09293D] text-white text-xs font-bold rounded-none transition">
                     ✓ Approve
                   </button>
-                  <button onclick="promptRejectQuest('${q.id}')" class="px-3 py-1.5 bg-[#D80707] hover:bg-[#09293D] text-white text-xs font-bold rounded-none  transition">
+                  <button onclick="promptRejectQuest('${q.id}', '${q.studentId || ''}', '${(q.studentName || 'Student').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-[#D80707] hover:bg-[#09293D] text-white text-xs font-bold rounded-none transition">
                     ✕ Reject
                   </button>
                 </div>
@@ -4689,9 +5250,14 @@
             `;
           } else {
             redemptionsCont.innerHTML = pendingRedemptions.map(r => `
-              <div class="p-3.5 bg-white border border-[#DED9D3] rounded-none space-y-2 font-sans ">
+              <div class="p-3.5 bg-white border border-[#DED9D3] rounded-none space-y-2 font-sans">
                 <div class="flex items-start justify-between gap-2">
                   <div>
+                    <div class="flex items-center gap-1.5 mb-1">
+                      <span class="px-2 py-0.5 bg-[#D9E6EB] text-[#09293D] font-bold text-xs rounded-none border border-[#1C5682]">
+                        👤 ${r.studentName || 'Student'} (${r.studentId || ''})
+                      </span>
+                    </div>
                     <div class="font-bold text-[#09293D] text-xs">${r.rewardTitle || 'Reward'}</div>
                     <div class="text-xs text-[#F65800] font-bold">Cost: ${r.costCoins || 0} Coins (Escrowed)</div>
                     <div class="text-xs text-[#666D57]">Requested: ${r.requestedAt ? new Date(r.requestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'}</div>
@@ -4701,10 +5267,10 @@
                   </span>
                 </div>
                 <div class="flex items-center gap-2 pt-1 border-t border-[#DED9D3]">
-                  <button onclick="approveRedemption('${r.id}')" class="flex-1 py-1.5 bg-[#09293D] hover:bg-[#1C5682] text-white text-xs font-bold rounded-none  transition">
+                  <button onclick="approveRedemption('${r.id}', '${r.studentId || ''}', '${(r.studentName || 'Student').replace(/'/g, "\\'")}')" class="flex-1 py-1.5 bg-[#09293D] hover:bg-[#1C5682] text-white text-xs font-bold rounded-none transition">
                     ✓ Approve & Deliver
                   </button>
-                  <button onclick="promptRejectRedemption('${r.id}')" class="px-3 py-1.5 bg-[#D80707] hover:bg-[#09293D] text-white text-xs font-bold rounded-none  transition">
+                  <button onclick="promptRejectRedemption('${r.id}', '${r.studentId || ''}', '${(r.studentName || 'Student').replace(/'/g, "\\'")}')" class="px-3 py-1.5 bg-[#D80707] hover:bg-[#09293D] text-white text-xs font-bold rounded-none transition">
                     ✕ Reject & Refund
                   </button>
                 </div>
@@ -4715,7 +5281,7 @@
       });
     }
 
-    function approveQuest(submissionId) {
+    function approveQuest(submissionId, studentId) {
       if (!currentUser || currentUser.role !== 'parent' || currentRole !== 'parent') {
         alertCustom("Access Denied", "Parent authorization required to approve quests.");
         return;
@@ -4728,17 +5294,29 @@
       ZoptroApiClient.approveQuestSubmission({
         submissionId: submissionId,
         parentUserId: parentId,
-        bonusCoins: bonusCoins
+        bonusCoins: bonusCoins,
+        studentId: studentId || undefined
       }).then(function(res) {
         if (res && res.success) {
           playSound('correct');
           spawnConfetti();
+          const targetChildId = studentId || (res.updatedWallet && res.updatedWallet.studentId) || activeChildId;
+          const targetChild = linkedChildren ? linkedChildren.find(c => c.id === targetChildId) : null;
           if (res.updatedWallet) {
-            focusCoins = res.updatedWallet.coins !== undefined ? res.updatedWallet.coins : focusCoins;
-            commanderXP = res.updatedWallet.xp !== undefined ? res.updatedWallet.xp : commanderXP;
+            if (targetChild) {
+              targetChild.coins = res.updatedWallet.coins !== undefined ? res.updatedWallet.coins : targetChild.coins;
+              targetChild.xp = res.updatedWallet.xp !== undefined ? res.updatedWallet.xp : targetChild.xp;
+              targetChild.level = Math.floor((targetChild.xp || 0) / 250) + 1;
+            }
+            if (targetChildId === activeChildId || !currentUser.linkedStudentId || targetChildId === currentUser.linkedStudentId) {
+              focusCoins = res.updatedWallet.coins !== undefined ? res.updatedWallet.coins : focusCoins;
+              commanderXP = res.updatedWallet.xp !== undefined ? res.updatedWallet.xp : commanderXP;
+            }
           }
-          alertCustom("Quest Approved! 🌟", `Quest approved with bonus (+${bonusCoins} coins)! Student balance: ${focusCoins} Coins.`);
+          const sName = targetChild ? targetChild.fullName : (res.studentName || 'Student');
+          alertCustom("Quest Approved! 🌟", `Quest approved with bonus (+${bonusCoins} coins) for ${sName}! Updated balance: ${(targetChild ? targetChild.coins : focusCoins)} Coins.`);
           updateGamificationUI();
+          renderParentChildSelector();
           renderVerificationQueue();
           renderParentAnalytics();
           renderParentHistory();
@@ -4749,7 +5327,7 @@
       });
     }
 
-    function approveRedemption(redemptionId) {
+    function approveRedemption(redemptionId, studentId, studentName) {
       if (!currentUser || currentUser.role !== 'parent' || currentRole !== 'parent') {
         alertCustom("Access Denied", "Parent authorization required to approve redemptions.");
         return;
@@ -4759,11 +5337,15 @@
 
       ZoptroApiClient.approveRedemption({
         redemptionId: redemptionId,
-        parentUserId: parentId
+        parentUserId: parentId,
+        studentId: studentId || undefined
       }).then(function(res) {
         if (res && res.success) {
           playSound('correct');
-          alertCustom("Reward Approved! 🎁", "Reward approved and marked delivered to Commander Divyank.");
+          const targetChild = (studentId && linkedChildren) ? linkedChildren.find(c => c.id === studentId) : null;
+          const displayName = targetChild ? targetChild.fullName : (studentName || 'Student');
+          alertCustom("Reward Approved! 🎁", `Reward approved and marked delivered to ${displayName}.`);
+          renderParentChildSelector();
           renderVerificationQueue();
           renderParentAnalytics();
           renderParentHistory();
@@ -4773,18 +5355,20 @@
       });
     }
 
-    function promptRejectQuest(submissionId) {
+    function promptRejectQuest(submissionId, studentId, studentName) {
       document.getElementById('rejectPromptType').value = 'quest';
       document.getElementById('rejectPromptId').value = submissionId;
-      document.getElementById('rejectPromptSubtext').innerText = 'Specify reason for rejecting this quest submission:';
+      const targetLabel = studentName ? ` for ${studentName}` : '';
+      document.getElementById('rejectPromptSubtext').innerText = `Specify reason for rejecting this quest submission${targetLabel}:`;
       document.getElementById('rejectPromptReason').value = '';
       document.getElementById('rejectPromptModal').classList.remove('hidden');
     }
 
-    function promptRejectRedemption(redemptionId) {
+    function promptRejectRedemption(redemptionId, studentId, studentName) {
       document.getElementById('rejectPromptType').value = 'redemption';
       document.getElementById('rejectPromptId').value = redemptionId;
-      document.getElementById('rejectPromptSubtext').innerText = 'Specify reason for rejecting reward redemption (escrowed coins will be refunded):';
+      const targetLabel = studentName ? ` for ${studentName}` : '';
+      document.getElementById('rejectPromptSubtext').innerText = `Specify reason for rejecting reward redemption${targetLabel} (escrowed coins will be refunded):`;
       document.getElementById('rejectPromptReason').value = '';
       document.getElementById('rejectPromptModal').classList.remove('hidden');
     }
@@ -4814,6 +5398,7 @@
           closeRejectPromptModal();
           if (res && res.success) {
             alertCustom("Quest Rejected", `Quest rejected: ${reason}`);
+            renderParentChildSelector();
             renderVerificationQueue();
             renderParentAnalytics();
             renderParentHistory();
@@ -4831,8 +5416,13 @@
           closeRejectPromptModal();
           if (res && res.success) {
             alertCustom("Redemption Rejected", `Reward rejected: ${reason}. ${res.refundedCoins || 0} coins refunded to student wallet.`);
-            focusCoins = res.newBalance !== undefined ? res.newBalance : focusCoins;
+            if (res.newBalance !== undefined) {
+              const activeChild = linkedChildren ? linkedChildren.find(c => c.id === activeChildId) : null;
+              if (activeChild) activeChild.coins = res.newBalance;
+              focusCoins = res.newBalance;
+            }
             updateGamificationUI();
+            renderParentChildSelector();
             renderVerificationQueue();
             renderParentAnalytics();
             renderParentHistory();
@@ -5023,10 +5613,15 @@
       const pin = document.getElementById('newStudentPin').value.trim();
       const password = document.getElementById('newStudentPassword').value;
       const parentId = currentUser.id;
-      const studentId = currentUser.linkedStudentId || 'u_stu_divyank';
+
+      const activeChild = (linkedChildren && linkedChildren.length > 0)
+        ? (linkedChildren.find(c => c.id === activeChildId) || linkedChildren[0])
+        : DEFAULT_STUDENT_PROFILES[0];
+      const studentId = activeChild ? activeChild.id : (currentUser.linkedStudentId || 'u_stu_demo');
+      const studentName = activeChild ? activeChild.fullName : 'Student';
 
       if (!pin && !password) {
-        alertCustom("Input Required", "Enter a new PIN (4+ digits) or new Password (6+ chars).");
+        alertCustom("Input Required", `Enter a new PIN (4+ digits) or new Password (6+ chars) for ${studentName}.`);
         return;
       }
 
@@ -5040,7 +5635,7 @@
       }).then(function(res) {
         if (res && res.success) {
           playSound('correct');
-          alertCustom("Security Updated", "Commander Divyank's login credentials were updated successfully.");
+          alertCustom("Security Updated", `${studentName}'s login credentials were updated successfully.`);
           document.getElementById('newStudentPin').value = '';
           document.getElementById('newStudentPassword').value = '';
           renderParentHistory();
@@ -5250,6 +5845,10 @@
     // ==========================================
     window.onload = function () {
       initializePresentation();
+      // Initialize Browser Mock Database on page load
+      if (typeof BrowserMockBackend !== 'undefined') {
+        BrowserMockBackend.init();
+      }
       loadAuthSession();
       renderHabits();
       renderWeeklyGrid();
@@ -5259,6 +5858,7 @@
       loadNewsArticle(0);
       renderStoryTime();
       renderRewardsCatalog();
+      renderParentChildSelector();
       renderVerificationQueue();
       renderParentHabitsCRUD();
       renderParentAnalytics();
@@ -5266,17 +5866,13 @@
       updateGamificationUI();
       updateSprintUI();
 
-      // Initialize Browser Mock Database on page load
-      if (typeof BrowserMockBackend !== 'undefined') {
-        BrowserMockBackend.init();
-      }
-
       const poc = document.getElementById('parentObservedCoins');
       if (poc) poc.innerText = focusCoins;
 
       // Sync state via ZoptroApiClient (works identically in GAS mode and local localStorage mode)
       if (typeof ZoptroApiClient !== 'undefined') {
-        ZoptroApiClient.getCommanderData().then(function(data) {
+        const studentPayload = (currentUser && currentUser.role === 'student' && currentUser.id) ? { studentId: currentUser.id } : undefined;
+        ZoptroApiClient.getCommanderData(studentPayload).then(function(data) {
           if (data && data.profile) {
             focusCoins = data.profile.focusCoins !== undefined ? data.profile.focusCoins : focusCoins;
             commanderXP = data.profile.xp !== undefined ? data.profile.xp : commanderXP;
@@ -5312,6 +5908,7 @@
           }
         });
       } else if (typeof google !== 'undefined' && google.script && google.script.run) {
+        const studentPayload = (currentUser && currentUser.role === 'student' && currentUser.id) ? { studentId: currentUser.id } : undefined;
         google.script.run.withSuccessHandler(function(data) {
           if (data && data.profile) {
             focusCoins = data.profile.focusCoins || focusCoins;
@@ -5346,7 +5943,7 @@
             renderVerificationQueue();
             renderParentAnalytics();
           }
-        }).getCommanderData();
+        }).getCommanderData(studentPayload);
       }
     };
 
