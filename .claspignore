@@ -1,0 +1,7 @@
+# Ignore everything by default
+**/*
+
+# Only include Google Apps Script files
+!google_apps_script_backend.js
+!divyank_mission_control_google_apps_script_app.html
+!appsscript.json

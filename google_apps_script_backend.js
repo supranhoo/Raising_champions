@@ -313,6 +313,39 @@ function formatTableHeader(sheet, numCols) {
 }
 
 /**
+ * Resolves the Google Spreadsheet instance for both container-bound
+ * and standalone Web App deployments.
+ */
+function getSpreadsheet_() {
+  if (typeof SpreadsheetApp === "undefined") return null;
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+  } catch (e) {}
+
+  if (typeof PropertiesService !== "undefined" && PropertiesService.getScriptProperties) {
+    try {
+      const props = PropertiesService.getScriptProperties();
+      const sheetId = props.getProperty("ZOPTRO_SPREADSHEET_ID");
+      if (sheetId) {
+        try {
+          return SpreadsheetApp.openById(sheetId);
+        } catch (e) {
+          if (typeof Logger !== "undefined") Logger.log("Could not open existing sheet by ID: " + e.message);
+        }
+      }
+      const newSheet = SpreadsheetApp.create("Zoptro Mission Control Database");
+      props.setProperty("ZOPTRO_SPREADSHEET_ID", newSheet.getId());
+      if (typeof Logger !== "undefined") Logger.log("Created standalone database sheet: " + newSheet.getUrl());
+      return newSheet;
+    } catch (err) {
+      if (typeof Logger !== "undefined") Logger.log("Error obtaining spreadsheet: " + err.message);
+    }
+  }
+  return null;
+}
+
+/**
  * Initializes or self-heals all 6 required tables in the Google Spreadsheet.
  * Migrates legacy CommanderProfile data if detected.
  */
@@ -321,7 +354,10 @@ function initializeDatabase() {
     if (typeof SpreadsheetApp === "undefined") {
       return { success: true, message: "Mock environment: self-healing verified." };
     }
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet_();
+    if (!ss) {
+      return { success: false, error: "SPREADSHEET_NOT_FOUND" };
+    }
 
     // 1. Detect and migrate legacy CommanderProfile if present
     let legacyProfile = { coins: 340, xp: 680, level: 3, streak: 5 };
@@ -473,7 +509,8 @@ function seedInitialDataIfEmpty(ss, legacyProfile) {
 
 function getSheetRecords(sheetName) {
   if (typeof SpreadsheetApp === "undefined") return [];
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
+  if (!ss) return [];
   let sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     initializeDatabase();
@@ -515,7 +552,8 @@ function sanitizeSheetCellValue(val) {
 
 function appendSheetRecord(sheetName, recordObj) {
   if (typeof SpreadsheetApp === "undefined") return null;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
+  if (!ss) return null;
   let sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
     initializeDatabase();
@@ -532,7 +570,8 @@ function appendSheetRecord(sheetName, recordObj) {
 
 function updateSheetRecord(sheetName, idField, idValue, updates) {
   if (typeof SpreadsheetApp === "undefined") return false;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
+  if (!ss) return false;
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) return false;
   const records = getSheetRecords(sheetName);
@@ -552,7 +591,8 @@ function updateSheetRecord(sheetName, idField, idValue, updates) {
 
 function deleteSheetRecord(sheetName, idField, idValue) {
   if (typeof SpreadsheetApp === "undefined") return false;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet_();
+  if (!ss) return false;
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) return false;
   const records = getSheetRecords(sheetName);
