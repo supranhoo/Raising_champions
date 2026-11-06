@@ -1194,6 +1194,9 @@
 </svg>
             <span>Add Habit Quest</span>
           </button>
+          <button onclick="setUserRole('admin')" id="btnParentHqAdminCms" class="px-3.5 py-2 bg-[#09293D] hover:bg-[#1C5682] text-white font-sans text-xs font-bold rounded-none border border-[#D9E6EB] transition flex items-center space-x-1.5" title="Open Admin CMS">
+            <span>🛡️ Admin CMS</span>
+          </button>
         </div>
       </div>
 
@@ -1865,7 +1868,7 @@
     </section>
 
   </main>
-  <footer class="app-footer"><span>Zoptro · Focus &amp; Grow</span><span>Learning with purpose. Progress with support.</span></footer>
+  <footer class="app-footer"><span>Zoptro · Focus &amp; Grow</span><span>Learning with purpose. Progress with support. <button type="button" onclick="openAdminPinPrompt()" id="footerAdminAccessLink" class="text-xs text-[#666D57] hover:text-[#09293D] underline ml-2 cursor-pointer font-bold">Admin CMS</button></span></footer>
 
   <!-- MODAL: Custom In-App Alert -->
   <div id="customAlertModal" class="hidden fixed inset-0 z-50 bg-[#09293D]/80  flex items-center justify-center p-4">
@@ -1998,6 +2001,9 @@
           <div class="text-xs text-[#666D57]">New to Zoptro? Set up your household in minutes:</div>
           <button type="button" onclick="openFamilyOnboardingModal()" id="btnOpenFamilyOnboardingFromSignIn" class="w-full py-2.5 bg-[#F65800] hover:bg-[#F9A66E] text-white font-bold text-xs uppercase tracking-wider rounded-none transition flex items-center justify-center gap-2">
             <span>👨‍👩‍👧‍👦 New Family Sign-Up (Parent + Children)</span>
+          </button>
+          <button type="button" onclick="closeAuthModal(); openAdminPinPrompt();" id="btnAdminSignInFromModal" class="w-full py-2 bg-white hover:bg-[#F4F2EA] text-[#09293D] font-bold text-xs rounded-none border border-[#DED9D3] transition flex items-center justify-center gap-1.5" title="Access Admin Mission Control">
+            <span>🛡️ Administrator Access (PIN: 9999)</span>
           </button>
         </div>
       </div>
