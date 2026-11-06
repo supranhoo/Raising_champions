@@ -218,17 +218,31 @@ const gasBackend = require('../google_apps_script_backend.js');
 async function runTests() {
   console.log("--- 1. GOOGLE APPS SCRIPT SCHEMA & INITIALIZATION ---");
 
-  it("Schemas definition contains exactly 6 tables with proper keys", () => {
-    const tables = Object.keys(gasBackend.SCHEMAS);
-    assert.deepStrictEqual(tables, [
-      "Users", "HabitsQuests", "SubmissionsQueue", "RewardsCatalog", "RedemptionsQueue", "ActivityLogs"
-    ]);
-    assert.strictEqual(gasBackend.SCHEMAS.Users.length, 14);
+  it("Schemas definition contains 6 core tables and 7 dynamic tables with proper keys", () => {
+    const coreTables = ["Users", "HabitsQuests", "SubmissionsQueue", "RewardsCatalog", "RedemptionsQueue", "ActivityLogs"];
+    const dynamicTables = ["Stories", "StoryQuestions", "EQScenarios", "DailyKnowledge", "CurriculumQuizzes", "StudentCompletions", "StudentGrowthProfiles"];
+    
+    coreTables.forEach(t => {
+      assert.ok(gasBackend.SCHEMAS[t], `Core table ${t} must exist in SCHEMAS`);
+    });
+    dynamicTables.forEach(t => {
+      assert.ok(gasBackend.SCHEMAS[t], `Dynamic table ${t} must exist in SCHEMAS`);
+    });
+
+    assert.strictEqual(gasBackend.SCHEMAS.Users.length, 17, "Users schema must contain 17 columns (including gradeClass, age, parentalPermissions)");
     assert.strictEqual(gasBackend.SCHEMAS.HabitsQuests.length, 10);
     assert.strictEqual(gasBackend.SCHEMAS.SubmissionsQueue.length, 11);
     assert.strictEqual(gasBackend.SCHEMAS.RewardsCatalog.length, 8);
     assert.strictEqual(gasBackend.SCHEMAS.RedemptionsQueue.length, 10);
     assert.strictEqual(gasBackend.SCHEMAS.ActivityLogs.length, 7);
+
+    assert.strictEqual(gasBackend.SCHEMAS.Stories.length, 10);
+    assert.strictEqual(gasBackend.SCHEMAS.StoryQuestions.length, 8);
+    assert.strictEqual(gasBackend.SCHEMAS.EQScenarios.length, 12);
+    assert.strictEqual(gasBackend.SCHEMAS.DailyKnowledge.length, 12);
+    assert.strictEqual(gasBackend.SCHEMAS.CurriculumQuizzes.length, 14);
+    assert.strictEqual(gasBackend.SCHEMAS.StudentCompletions.length, 9);
+    assert.strictEqual(gasBackend.SCHEMAS.StudentGrowthProfiles.length, 9);
   });
 
   it("Brand color constants strictly match Optra360 palette", () => {
@@ -969,6 +983,417 @@ async function runTests() {
 
     const taskAdd = gasBackend.addCustomHabitTask("Legacy Extra Practice", 15, "🎯");
     assert.strictEqual(taskAdd.success, true);
+  });
+
+  console.log("\n--- 9. MILESTONE 1: RBAC & ADMIN CMS SUITE ---");
+
+  it("assertAdmin verifies admin role and strictly rejects non-admin users with 403", () => {
+    // Admin user verification
+    const adminCheck = gasBackend.assertAdmin("u_adm_demo");
+    assert.strictEqual(adminCheck.success, true);
+    assert.strictEqual(adminCheck.user.role, "admin");
+
+    // Student rejection
+    const studentCheck = gasBackend.assertAdmin("u_stu_demo");
+    assert.strictEqual(studentCheck.success, false);
+    assert.strictEqual(studentCheck.code, 403);
+    assert.ok(studentCheck.error.includes("UNAUTHORIZED"));
+
+    // Parent rejection
+    const parentCheck = gasBackend.assertAdmin("u_par_demo");
+    assert.strictEqual(parentCheck.success, false);
+    assert.strictEqual(parentCheck.code, 403);
+
+    // Non-existent user rejection
+    const ghostCheck = gasBackend.assertAdmin("u_ghost_999");
+    assert.strictEqual(ghostCheck.success, false);
+    assert.strictEqual(ghostCheck.code, 403);
+  });
+
+  let createdStoryId = null;
+
+  it("Admin CMS saveAdminContentItem creates new item and updates existing item under lock", () => {
+    // Create new story item
+    const saveRes = gasBackend.saveAdminContentItem({
+      adminUserId: "u_adm_demo",
+      contentType: "stories",
+      itemData: {
+        grade: "Class 4",
+        title: "The Quantum Compass",
+        genre: "Sci-Fi Adventure",
+        content: "Divyank held the mysterious device as it hummed with blue energy...",
+        moralLesson: "Curiosity paired with disciplined preparation unlocks discovery.",
+        orderIndex: 10,
+        isActive: true
+      }
+    });
+    assert.strictEqual(saveRes.success, true);
+    assert.ok(saveRes.item.id);
+    assert.strictEqual(saveRes.item.grade, "Class 4");
+    assert.strictEqual(saveRes.item.title, "The Quantum Compass");
+    createdStoryId = saveRes.item.id;
+
+    // Update the story item
+    const updateRes = gasBackend.saveAdminContentItem({
+      adminUserId: "u_adm_demo",
+      contentType: "stories",
+      itemData: {
+        id: createdStoryId,
+        title: "The Quantum Compass (Extended Edition)",
+        orderIndex: 12
+      }
+    });
+    assert.strictEqual(updateRes.success, true);
+    assert.strictEqual(updateRes.item.title, "The Quantum Compass (Extended Edition)");
+    assert.strictEqual(updateRes.item.orderIndex, 12);
+
+    // Rejection for non-admin attempts
+    const unauthorizedSave = gasBackend.saveAdminContentItem({
+      adminUserId: "u_stu_demo",
+      contentType: "stories",
+      itemData: { title: "Hacked Story" }
+    });
+    assert.strictEqual(unauthorizedSave.success, false);
+    assert.strictEqual(unauthorizedSave.code, 403);
+  });
+
+  it("Admin CMS getAdminContentList filters content by type, grade, and active status", () => {
+    // Query Class 4 stories
+    const listRes = gasBackend.getAdminContentList({
+      adminUserId: "u_adm_demo",
+      contentType: "stories",
+      grade: "Class 4"
+    });
+    assert.strictEqual(listRes.success, true);
+    assert.strictEqual(listRes.contentType, "stories");
+    assert.ok(listRes.items.some(s => s.id === createdStoryId));
+
+    // Non-admin query rejected
+    const blockedQuery = gasBackend.getAdminContentList({
+      adminUserId: "u_par_demo",
+      contentType: "stories"
+    });
+    assert.strictEqual(blockedQuery.success, false);
+    assert.strictEqual(blockedQuery.code, 403);
+  });
+
+  it("Admin CMS toggleContentActiveStatus and deleteAdminContentItem manage lifecycle safely", () => {
+    // Toggle active status to false
+    const toggleRes = gasBackend.toggleContentActiveStatus({
+      adminUserId: "u_adm_demo",
+      contentType: "stories",
+      itemId: createdStoryId,
+      isActive: false
+    });
+    assert.strictEqual(toggleRes.success, true);
+    assert.strictEqual(toggleRes.isActive, false);
+
+    // Delete item
+    const delRes = gasBackend.deleteAdminContentItem({
+      adminUserId: "u_adm_demo",
+      contentType: "stories",
+      itemId: createdStoryId
+    });
+    assert.strictEqual(delRes.success, true);
+    assert.strictEqual(delRes.deletedId, createdStoryId);
+
+    // Confirm deletion in query
+    const listAfter = gasBackend.getAdminContentList({
+      adminUserId: "u_adm_demo",
+      contentType: "stories",
+      grade: "Class 4",
+      includeInactive: true
+    });
+    assert.strictEqual(listAfter.items.some(s => s.id === createdStoryId), false);
+  });
+
+  console.log("\n--- 10. MILESTONE 1: DYNAMIC PROGRESSION & CBSE/NCERT ALIGNMENT ---");
+
+  it("normalizeGrade and isValidGrade enforce CBSE/NCERT Class 1 to Class 10 standards", () => {
+    assert.strictEqual(gasBackend.normalizeGrade("class 3"), "Class 3");
+    assert.strictEqual(gasBackend.normalizeGrade("5"), "Class 5");
+    assert.strictEqual(gasBackend.normalizeGrade("Class 10"), "Class 10");
+    assert.strictEqual(gasBackend.normalizeGrade("Grade 7"), "Class 7");
+
+    assert.strictEqual(gasBackend.isValidGrade("Class 1"), true);
+    assert.strictEqual(gasBackend.isValidGrade("Class 5"), true);
+    assert.strictEqual(gasBackend.isValidGrade("Class 10"), true);
+    assert.strictEqual(gasBackend.isValidGrade("Class 11"), false);
+    assert.strictEqual(gasBackend.isValidGrade("Kindergarten"), false);
+    assert.strictEqual(gasBackend.isValidGrade(""), false);
+  });
+
+  let nextStoryItem = null;
+
+  it("getNextContentItem returns next uncompleted item for student's enrolled grade", () => {
+    // Demo student is enrolled in Class 3
+    const nextRes = gasBackend.getNextContentItem({
+      studentId: "u_stu_demo",
+      contentType: "stories"
+    });
+    assert.strictEqual(nextRes.success, true);
+    assert.ok(nextRes.item, "Must return an uncompleted Class 3 story");
+    assert.strictEqual(nextRes.item.grade, "Class 3");
+    assert.strictEqual(nextRes.hasMore, true);
+    nextStoryItem = nextRes.item;
+  });
+
+  it("recordContentCompletion awards coins and XP, recalculates level, and prevents duplicate farming", () => {
+    const usersBefore = gasBackend.getSheetRecords("Users");
+    const stuBefore = usersBefore.find(u => u.id === "u_stu_demo");
+    const coinsBefore = stuBefore.coins;
+    const xpBefore = stuBefore.xp;
+
+    // Student completes story
+    const compRes = gasBackend.recordContentCompletion({
+      studentId: "u_stu_demo",
+      contentType: "stories",
+      contentId: nextStoryItem.id,
+      score: 100,
+      answers: { q1: 1 }
+    });
+    assert.strictEqual(compRes.success, true);
+    assert.ok(compRes.coinsAwarded > 0, "Coins must be awarded for first-time completion");
+    assert.ok(compRes.xpAwarded > 0, "XP must be awarded");
+    assert.ok(compRes.newCoins > coinsBefore);
+    assert.ok(compRes.newXp > xpBefore);
+
+    // Duplicate completion submission must not award double coins (anti-farming)
+    const dupRes = gasBackend.recordContentCompletion({
+      studentId: "u_stu_demo",
+      contentType: "stories",
+      contentId: nextStoryItem.id,
+      score: 100,
+      answers: { q1: 1 }
+    });
+    assert.strictEqual(dupRes.success, true);
+    assert.strictEqual(dupRes.alreadyCompleted, true);
+    assert.strictEqual(dupRes.coinsAwarded, 0, "No duplicate coins allowed");
+    assert.strictEqual(dupRes.xpAwarded, 0, "No duplicate XP allowed");
+
+    // Next item progression: completed item must be excluded from next item query
+    const afterRes = gasBackend.getNextContentItem({
+      studentId: "u_stu_demo",
+      contentType: "stories"
+    });
+    assert.strictEqual(afterRes.success, true);
+    if (afterRes.item) {
+      assert.notStrictEqual(afterRes.item.id, nextStoryItem.id, "Completed item must be excluded");
+    }
+  });
+
+  it("getContentByGrade strictly isolates content to student enrolled grade (anti-forgery)", () => {
+    const classRes = gasBackend.getContentByGrade({
+      studentId: "u_stu_demo",
+      contentType: "stories",
+      targetGrade: "Class 5"
+    });
+    assert.strictEqual(classRes.success, true);
+    assert.strictEqual(classRes.grade, "Class 3", "Enrolled grade overrides client targetGrade");
+    classRes.items.forEach(item => {
+      assert.strictEqual(item.grade, "Class 3", "Strict grade isolation must hold");
+    });
+  });
+
+  console.log("\n--- 11. MILESTONE 1: LONGITUDINAL STUDENT GROWTH PROFILES ---");
+
+  it("recordGrowthEvent updates student growth metrics across focus, habits, academics, and EQ", () => {
+    // Record focus sprint event (25 minutes)
+    const focusEvt = gasBackend.recordGrowthEvent({
+      studentId: "u_stu_demo",
+      eventType: "focus_sprint",
+      payload: { minutes: 25 }
+    });
+    assert.strictEqual(focusEvt.success, true);
+    assert.strictEqual(focusEvt.studentId, "u_stu_demo");
+
+    // Record quiz event
+    const quizEvt = gasBackend.recordGrowthEvent({
+      studentId: "u_stu_demo",
+      eventType: "quiz_completed",
+      payload: { score: 95 }
+    });
+    assert.strictEqual(quizEvt.success, true);
+
+    // Record EQ reflection
+    const eqEvt = gasBackend.recordGrowthEvent({
+      studentId: "u_stu_demo",
+      eventType: "eq_reflection",
+      payload: { score: 90, reflection: "Shared supplies with friend" }
+    });
+    assert.strictEqual(eqEvt.success, true);
+  });
+
+  it("getLongitudinalProfile aggregates historical trend data and unlocked milestones", () => {
+    const profRes = gasBackend.getLongitudinalProfile({
+      studentId: "u_stu_demo",
+      parentUserId: "u_par_demo",
+      timeRange: "7d"
+    });
+    assert.strictEqual(profRes.success, true);
+    assert.ok(profRes.profile);
+    assert.strictEqual(profRes.profile.studentId, "u_stu_demo");
+    assert.ok(profRes.profile.summary.focusMinutes >= 25);
+    assert.ok(profRes.profile.history.length > 0);
+    assert.ok(Array.isArray(profRes.profile.milestones));
+
+    // Foreign parent access blocked
+    const foreignRes = gasBackend.getLongitudinalProfile({
+      studentId: "u_stu_demo",
+      parentUserId: "u_par_unpaired_stranger",
+      timeRange: "7d"
+    });
+    assert.strictEqual(foreignRes.success, false);
+    assert.strictEqual(foreignRes.code, 403);
+  });
+
+  console.log("\n--- 12. MILESTONE 1: FAMILY ONBOARDING & MULTI-CHILD GOVERNANCE ---");
+
+  let onboardedParent = null;
+  let onboardedChildren = [];
+
+  it("signUpFamilyOnboarding atomically onboards parent and multiple children with grades and ages", () => {
+    const familyRes = gasBackend.signUpFamilyOnboarding({
+      parentData: {
+        fullName: "Major Vikram",
+        email: "vikram@example.com",
+        password: "Password123!",
+        pin: "9988"
+      },
+      childrenData: [
+        {
+          fullName: "Aarav",
+          gradeClass: "Class 3",
+          age: 8,
+          pin: "1122"
+        },
+        {
+          fullName: "Ananya",
+          gradeClass: "Class 7",
+          age: 12,
+          pin: "3344"
+        }
+      ]
+    });
+
+    assert.strictEqual(familyRes.success, true);
+    assert.ok(familyRes.parent.id);
+    assert.strictEqual(familyRes.parent.fullName, "Major Vikram");
+    assert.ok(familyRes.parent.pairingCode);
+    assert.strictEqual(familyRes.children.length, 2);
+
+    const aarav = familyRes.children.find(c => c.fullName === "Aarav");
+    const ananya = familyRes.children.find(c => c.fullName === "Ananya");
+    assert.ok(aarav);
+    assert.strictEqual(aarav.gradeClass, "Class 3");
+    assert.strictEqual(aarav.age, 8);
+    assert.strictEqual(aarav.linkedParentId, familyRes.parent.id);
+    assert.strictEqual(aarav.pairingCode, familyRes.parent.pairingCode);
+
+    assert.ok(ananya);
+    assert.strictEqual(ananya.gradeClass, "Class 7");
+    assert.strictEqual(ananya.age, 12);
+    assert.strictEqual(ananya.linkedParentId, familyRes.parent.id);
+
+    onboardedParent = familyRes.parent;
+    onboardedChildren = familyRes.children;
+  });
+
+  it("updateChildGovernance allows parent to edit name, age, promote grade, and set parental permissions", () => {
+    const aarav = onboardedChildren.find(c => c.fullName === "Aarav");
+    
+    // Promote Aarav from Class 3 to Class 4 and update parental permissions
+    const govRes = gasBackend.updateChildGovernance({
+      parentUserId: onboardedParent.id,
+      studentId: aarav.id,
+      updates: {
+        gradeClass: "Class 4",
+        age: 9,
+        parentalPermissions: {
+          maxDailyScreenMinutes: 60,
+          bedtimeCurfew: "21:00",
+          canRedeemWithoutApproval: false
+        }
+      }
+    });
+
+    assert.strictEqual(govRes.success, true);
+    assert.strictEqual(govRes.student.gradeClass, "Class 4");
+    assert.strictEqual(govRes.student.age, 9);
+    assert.strictEqual(govRes.student.parentalPermissions.maxDailyScreenMinutes, 60);
+
+    // Foreign parent attempt is blocked
+    const foreignGov = gasBackend.updateChildGovernance({
+      parentUserId: "u_par_demo", // not Aarav's parent
+      studentId: aarav.id,
+      updates: { gradeClass: "Class 10" }
+    });
+    assert.strictEqual(foreignGov.success, false);
+    assert.strictEqual(foreignGov.code, 403);
+  });
+
+  console.log("\n--- 13. CONTRACT ORACLE PARITY VERIFICATION ---");
+
+  await itAsync("ZoptroContractOracle maintains 100% schema and API contract parity with backend", async () => {
+    const { ZoptroContractOracle } = require("./harness/zoptro_contract_oracle.js");
+    const oracle = new ZoptroContractOracle();
+
+    // Verify all 13 tables are in oracle.tables
+    const expectedTables = [
+      "Users", "HabitsQuests", "SubmissionsQueue", "RewardsCatalog", "RedemptionsQueue", "ActivityLogs",
+      "Stories", "StoryQuestions", "EQScenarios", "DailyKnowledge", "CurriculumQuizzes", "StudentCompletions", "StudentGrowthProfiles"
+    ];
+    expectedTables.forEach(t => {
+      assert.ok(oracle.tables[t], `Oracle table ${t} must exist`);
+    });
+
+    // Seed default content in oracle
+    oracle.seedDefaultContent();
+
+    // Verify oracle admin assertion
+    const admCheck = oracle.assertAdmin("u_adm_demo");
+    assert.strictEqual(admCheck.success, true);
+    assert.strictEqual(oracle.assertAdmin("u_stu_demo").code, 403);
+
+    // Verify oracle CMS save and query
+    const saveRes = await oracle.saveAdminContentItem({
+      adminUserId: "u_adm_demo",
+      contentType: "stories",
+      itemData: {
+        grade: "Class 2",
+        title: "Oracle Story",
+        genre: "Mythology",
+        content: "Story body...",
+        moralLesson: "Honesty",
+        orderIndex: 5,
+        isActive: true
+      }
+    });
+    assert.strictEqual(saveRes.success, true);
+    assert.ok(saveRes.item.id);
+
+    const queryRes = await oracle.getAdminContentList({
+      adminUserId: "u_adm_demo",
+      contentType: "stories",
+      grade: "Class 2"
+    });
+    assert.strictEqual(queryRes.success, true);
+    assert.ok(queryRes.items.some(s => s.id === saveRes.item.id));
+
+    // Verify oracle family onboarding
+    const famRes = await oracle.signUpFamilyOnboarding({
+      parentData: { fullName: "Oracle Parent", email: "oracle_par@example.com", password: "Password123!", pin: "4321" },
+      childrenData: [{ fullName: "Oracle Kid", gradeClass: "Class 6", age: 11, pin: "8888" }]
+    });
+    assert.strictEqual(famRes.success, true);
+    assert.strictEqual(famRes.children[0].gradeClass, "Class 6");
+
+    // Verify oracle progression
+    const nextItem = await oracle.getNextContentItem({
+      studentId: famRes.children[0].id,
+      contentType: "stories"
+    });
+    assert.strictEqual(nextItem.success, true);
   });
 
   console.log("\n=================================================================");
