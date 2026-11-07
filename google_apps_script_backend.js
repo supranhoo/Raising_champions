@@ -96,6 +96,12 @@ const SCHEMAS = {
   StudentGrowthProfiles: [
     "id", "studentId", "date", "focusMinutes", "habitRate",
     "academicScore", "eqScore", "milestonesJson", "updatedAt"
+  ],
+  StudentQuestionResponses: [
+    "id", "completionId", "studentId", "grade", "contentType", "contentId",
+    "questionId", "questionText", "optionsJson", "studentChoiceIndex",
+    "studentChoiceText", "correctOptionIndex", "isCorrect", "pointsEarned",
+    "explanation", "timeSpentSeconds", "answeredAt"
   ]
 };
 
@@ -886,7 +892,8 @@ function assertParentPairing(parentUserId, studentId) {
 }
 
 /**
- * Asserts caller possesses the 'admin' role.
+ * Ensures demo admin user exists in sheet if not already created.
+ */
 function ensureAdminUserInSheet() {
   try {
     const ss = getSpreadsheet();
@@ -2884,6 +2891,33 @@ function recordContentCompletion(payload) {
     };
     appendSheetRecord("StudentCompletions", completionRecord);
 
+    // Save granular question responses if provided
+    const qResponses = payload.questionResponses || (Array.isArray(payload.questions) ? payload.questions : null);
+    if (qResponses && Array.isArray(qResponses)) {
+      qResponses.forEach(function(qr, idx) {
+        const respId = "sqr_" + now.getTime() + "_" + idx + "_" + Math.random().toString(36).substring(2, 6);
+        appendSheetRecord("StudentQuestionResponses", {
+          id: respId,
+          completionId: compId,
+          studentId: student.id,
+          grade: effectiveGrade,
+          contentType: canonicalType,
+          contentId: item.id,
+          questionId: qr.questionId || qr.id || ("q_" + (idx + 1)),
+          questionText: qr.questionText || qr.question || "",
+          optionsJson: typeof qr.options === "string" ? qr.options : JSON.stringify(qr.options || []),
+          studentChoiceIndex: qr.studentChoiceIndex !== undefined ? Number(qr.studentChoiceIndex) : (qr.selectedIndex !== undefined ? Number(qr.selectedIndex) : -1),
+          studentChoiceText: qr.studentChoiceText || qr.selectedText || "",
+          correctOptionIndex: qr.correctOptionIndex !== undefined ? Number(qr.correctOptionIndex) : (qr.correctIndex !== undefined ? Number(qr.correctIndex) : 0),
+          isCorrect: qr.isCorrect !== undefined ? Boolean(qr.isCorrect) : (Number(qr.studentChoiceIndex) === Number(qr.correctOptionIndex)),
+          pointsEarned: qr.pointsEarned !== undefined ? Number(qr.pointsEarned) : 10,
+          explanation: qr.explanation || qr.hint || "",
+          timeSpentSeconds: qr.timeSpentSeconds !== undefined ? Number(qr.timeSpentSeconds) : 0,
+          answeredAt: now.toISOString()
+        });
+      });
+    }
+
     // Calculate updated wallet
     const newCoins = (Number(student.coins) || 0) + coinsToAward;
     const newXp = (Number(student.xp) || 0) + xpToAward;
@@ -2954,6 +2988,302 @@ function recordContentCompletion(payload) {
       },
       nextItem: nextProgression.item,
       hasMore: nextProgression.hasMore
+    };
+  });
+}
+
+/**
+ * Records granular question-by-question responses for a student completion.
+ */
+function recordQuestionResponses(payload) {
+  return withScriptLock(function() {
+    const studentId = payload && payload.studentId ? String(payload.studentId) : "";
+    const completionId = payload && payload.completionId ? String(payload.completionId) : "";
+    const responses = payload && payload.responses ? payload.responses : [];
+
+    if (!studentId || !responses || !Array.isArray(responses) || responses.length === 0) {
+      return { success: false, error: "MISSING_FIELDS: studentId and responses array required." };
+    }
+
+    const users = getSheetRecords("Users");
+    const student = users.find(function(u) { return String(u.id) === studentId; });
+    if (!student) {
+      return { success: false, error: "STUDENT_NOT_FOUND" };
+    }
+
+    const now = new Date();
+    const effectiveGrade = student.gradeClass || "Class 3";
+    let insertedCount = 0;
+
+    responses.forEach(function(qr, idx) {
+      const respId = "sqr_" + now.getTime() + "_" + idx + "_" + Math.random().toString(36).substring(2, 6);
+      appendSheetRecord("StudentQuestionResponses", {
+        id: respId,
+        completionId: completionId || ("comp_" + now.getTime()),
+        studentId: student.id,
+        grade: qr.grade || effectiveGrade,
+        contentType: qr.contentType || "curriculum_quiz",
+        contentId: qr.contentId || "",
+        questionId: qr.questionId || qr.id || ("q_" + (idx + 1)),
+        questionText: qr.questionText || qr.question || "",
+        optionsJson: typeof qr.options === "string" ? qr.options : JSON.stringify(qr.options || []),
+        studentChoiceIndex: qr.studentChoiceIndex !== undefined ? Number(qr.studentChoiceIndex) : (qr.selectedIndex !== undefined ? Number(qr.selectedIndex) : -1),
+        studentChoiceText: qr.studentChoiceText || qr.selectedText || "",
+        correctOptionIndex: qr.correctOptionIndex !== undefined ? Number(qr.correctOptionIndex) : (qr.correctIndex !== undefined ? Number(qr.correctIndex) : 0),
+        isCorrect: qr.isCorrect !== undefined ? Boolean(qr.isCorrect) : (Number(qr.studentChoiceIndex) === Number(qr.correctOptionIndex)),
+        pointsEarned: qr.pointsEarned !== undefined ? Number(qr.pointsEarned) : 10,
+        explanation: qr.explanation || qr.hint || "",
+        timeSpentSeconds: qr.timeSpentSeconds !== undefined ? Number(qr.timeSpentSeconds) : 0,
+        answeredAt: now.toISOString()
+      });
+      insertedCount++;
+    });
+
+    return {
+      success: true,
+      insertedCount: insertedCount,
+      completionId: completionId,
+      message: "Successfully recorded " + insertedCount + " question responses."
+    };
+  });
+}
+
+/**
+ * Retrieves the granular answer sheet and question responses for a student.
+ * Guarded by role verification:
+ * - If caller is parent, enforces assertParentPairing(callerId, studentId).
+ * - If caller is student, ensures callerId === studentId.
+ * - Admin has full visibility across all students.
+ */
+function getStudentAnswerSheet(payload) {
+  const callerId = payload && payload.callerId ? String(payload.callerId) : (payload && payload.userId ? String(payload.userId) : "");
+  const studentId = payload && payload.studentId ? String(payload.studentId) : "";
+  const completionId = payload && payload.completionId ? String(payload.completionId) : null;
+  const contentId = payload && payload.contentId ? String(payload.contentId) : null;
+
+  if (!studentId) {
+    return { success: false, error: "MISSING_STUDENT_ID" };
+  }
+
+  const users = getSheetRecords("Users");
+  const student = users.find(function(u) { return String(u.id) === studentId; });
+  if (!student) {
+    return { success: false, error: "STUDENT_NOT_FOUND" };
+  }
+
+  // Permission validation
+  if (callerId) {
+    const caller = users.find(function(u) { return String(u.id) === callerId; });
+    if (caller) {
+      const callerRole = String(caller.role).toLowerCase();
+      if (callerRole === "parent") {
+        try {
+          assertParentPairing(callerId, studentId);
+        } catch (err) {
+          return { success: false, error: err.message, code: 403 };
+        }
+      } else if (callerRole === "student" && callerId !== studentId) {
+        return { success: false, error: "UNAUTHORIZED: Cannot view another student's answer sheet.", code: 403 };
+      }
+    }
+  }
+
+  const completions = getSheetRecords("StudentCompletions").filter(function(c) {
+    return String(c.studentId) === studentId &&
+      (!completionId || String(c.id) === completionId) &&
+      (!contentId || String(c.contentId) === contentId);
+  });
+
+  const allResponses = getSheetRecords("StudentQuestionResponses").filter(function(r) {
+    return String(r.studentId) === studentId &&
+      (!completionId || String(r.completionId) === completionId) &&
+      (!contentId || String(r.contentId) === contentId);
+  });
+
+  return {
+    success: true,
+    student: {
+      id: student.id,
+      fullName: student.fullName,
+      gradeClass: student.gradeClass || "Class 3",
+      avatar: student.avatar || "🚀"
+    },
+    completions: completions,
+    questionResponses: allResponses,
+    totalQuestionsAnswered: allResponses.length,
+    correctCount: allResponses.filter(function(r) { return r.isCorrect === true || r.isCorrect === "true"; }).length
+  };
+}
+
+/**
+ * Computes the next personalized curriculum question set or lesson for a student,
+ * respecting relative student pacing (their own syllabus position) and grade isolation.
+ */
+function getNextPersonalizedCurriculum(payload) {
+  const studentId = payload && payload.studentId ? String(payload.studentId) : "";
+  const contentType = payload && payload.contentType ? String(payload.contentType) : "CurriculumQuizzes";
+  const subject = payload && payload.subject ? String(payload.subject).toLowerCase() : null;
+
+  if (!studentId) {
+    return { success: false, error: "MISSING_STUDENT_ID" };
+  }
+
+  const users = getSheetRecords("Users");
+  const student = users.find(function(u) { return String(u.id) === studentId; });
+  if (!student) {
+    return { success: false, error: "STUDENT_NOT_FOUND" };
+  }
+
+  const effectiveGrade = student.gradeClass || "Class 3";
+  let canonicalType = "CurriculumQuizzes";
+  if (/daily/i.test(contentType) || /gk/i.test(contentType)) canonicalType = "DailyKnowledge";
+  else if (/story/i.test(contentType) || /lore/i.test(contentType)) canonicalType = "Stories";
+  else if (/eq/i.test(contentType)) canonicalType = "EQScenarios";
+
+  const allContent = getSheetRecords(canonicalType).filter(function(item) {
+    const gradeMatch = !item.grade || String(item.grade).toLowerCase() === effectiveGrade.toLowerCase();
+    const activeMatch = item.isActive !== false && item.isActive !== "false" && item.isActive !== 0;
+    const subjectMatch = !subject || !item.subject || String(item.subject).toLowerCase() === subject;
+    return gradeMatch && activeMatch && subjectMatch;
+  });
+
+  allContent.sort(function(a, b) {
+    return (parseInt(a.orderIndex, 10) || 0) - (parseInt(b.orderIndex, 10) || 0);
+  });
+
+  const completions = getSheetRecords("StudentCompletions").filter(function(c) {
+    return String(c.studentId) === student.id && (String(c.contentType) === canonicalType || String(c.contentType) === contentType);
+  });
+  const completedIds = completions.map(function(c) { return String(c.contentId); });
+
+  const uncompleted = allContent.filter(function(item) {
+    return completedIds.indexOf(String(item.id)) === -1;
+  });
+
+  const pastResponses = getSheetRecords("StudentQuestionResponses").filter(function(r) {
+    return String(r.studentId) === student.id;
+  });
+  const totalAnswered = pastResponses.length;
+  const totalCorrect = pastResponses.filter(function(r) { return r.isCorrect === true || r.isCorrect === "true"; }).length;
+  const overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 100;
+
+  if (uncompleted.length === 0) {
+    return {
+      success: true,
+      studentId: student.id,
+      grade: effectiveGrade,
+      contentType: canonicalType,
+      hasMore: false,
+      isExhausted: true,
+      message: "Curriculum for " + effectiveGrade + " (" + canonicalType + ") is 100% complete! Mastery unlocked 🌟",
+      completedCount: completedIds.length,
+      totalCount: allContent.length,
+      progressPercent: 100,
+      accuracy: overallAccuracy,
+      recommendedAction: "MASTERY_CELEBRATION"
+    };
+  }
+
+  const nextItem = uncompleted[0];
+  const progressPct = allContent.length > 0 ? Math.round((completedIds.length / allContent.length) * 100) : 0;
+
+  return {
+    success: true,
+    studentId: student.id,
+    grade: effectiveGrade,
+    contentType: canonicalType,
+    hasMore: true,
+    item: nextItem,
+    completedCount: completedIds.length,
+    totalCount: allContent.length,
+    progressPercent: progressPct,
+    accuracy: overallAccuracy,
+    recommendedAction: overallAccuracy < 60 ? "REINFORCEMENT_REVIEW" : "NEXT_TOPIC"
+  };
+}
+
+/**
+ * Bulk imports questions or curriculum items (e.g. from Admin CMS CSV/JSON batch upload).
+ * Protected by assertAdmin.
+ */
+function bulkUploadContentBatch(payload) {
+  return withScriptLock(function() {
+    const adminUserId = payload && payload.adminUserId ? String(payload.adminUserId) : "";
+    const adminCheck = assertAdmin(adminUserId);
+    if (!adminCheck.success) {
+      return adminCheck;
+    }
+
+    const contentType = payload && payload.contentType ? String(payload.contentType) : "CurriculumQuizzes";
+    let canonicalType = "CurriculumQuizzes";
+    if (/daily/i.test(contentType) || /gk/i.test(contentType)) canonicalType = "DailyKnowledge";
+    else if (/story/i.test(contentType)) canonicalType = "Stories";
+    else if (/eq/i.test(contentType)) canonicalType = "EQScenarios";
+
+    const items = payload && payload.items ? payload.items : [];
+    if (!Array.isArray(items) || items.length === 0) {
+      return { success: false, error: "MISSING_ITEMS: Array of items is required." };
+    }
+
+    const now = new Date().toISOString();
+    let importedCount = 0;
+
+    items.forEach(function(raw, idx) {
+      const itemId = raw.id || (canonicalType.toLowerCase().substring(0, 4) + "_" + Date.now() + "_" + idx);
+      const grade = raw.grade || "Class 3";
+      const record = {
+        id: itemId,
+        grade: grade,
+        isActive: raw.isActive !== undefined ? raw.isActive : true,
+        orderIndex: raw.orderIndex !== undefined ? Number(raw.orderIndex) : (idx + 1),
+        createdAt: now,
+        updatedAt: now
+      };
+
+      if (canonicalType === "CurriculumQuizzes") {
+        record.subject = raw.subject || "General Science";
+        record.examCategory = raw.examCategory || "CBSE";
+        record.title = raw.title || raw.questionText || ("Quiz Item " + (idx + 1));
+        record.questionText = raw.questionText || raw.title || "";
+        record.optionsJson = typeof raw.optionsJson === "string" ? raw.optionsJson : JSON.stringify(raw.options || raw.optionsJson || []);
+        record.correctOptionIndex = raw.correctOptionIndex !== undefined ? Number(raw.correctOptionIndex) : 0;
+        record.hint = raw.hint || "";
+        record.explanation = raw.explanation || "";
+      } else if (canonicalType === "DailyKnowledge") {
+        record.domain = raw.domain || "World & Science";
+        record.topic = raw.topic || "Daily Fact";
+        record.questionText = raw.questionText || "";
+        record.optionsJson = typeof raw.optionsJson === "string" ? raw.optionsJson : JSON.stringify(raw.options || raw.optionsJson || []);
+        record.correctOptionIndex = raw.correctOptionIndex !== undefined ? Number(raw.correctOptionIndex) : 0;
+        record.didYouKnowFact = raw.didYouKnowFact || raw.fact || "";
+      } else if (canonicalType === "Stories") {
+        record.title = raw.title || "Adventure Story";
+        record.summary = raw.summary || "";
+        record.content = raw.content || "";
+        record.moralDilemma = raw.moralDilemma || "";
+        record.virtueTags = raw.virtueTags || "Curiosity";
+        record.points = raw.points !== undefined ? Number(raw.points) : 25;
+        record.xp = raw.xp !== undefined ? Number(raw.xp) : 50;
+      } else if (canonicalType === "EQScenarios") {
+        record.title = raw.title || "EQ Dilemma";
+        record.dilemma = raw.dilemma || "";
+        record.virtueFocus = raw.virtueFocus || "Integrity";
+        record.choicesJson = typeof raw.choicesJson === "string" ? raw.choicesJson : JSON.stringify(raw.choices || []);
+        record.points = raw.points !== undefined ? Number(raw.points) : 20;
+        record.xp = raw.xp !== undefined ? Number(raw.xp) : 40;
+      }
+
+      appendSheetRecord(canonicalType, record);
+      importedCount++;
+    });
+
+    logActivity(adminUserId, "BULK_UPLOAD", "Batch imported " + importedCount + " items into " + canonicalType, "admin", "VERIFIED");
+
+    return {
+      success: true,
+      importedCount: importedCount,
+      contentType: canonicalType,
+      message: "Successfully bulk uploaded " + importedCount + " items into " + canonicalType + "."
     };
   });
 }
@@ -3636,6 +3966,11 @@ if (typeof module !== "undefined" && module.exports) {
     getLongitudinalProfile,
     recordGrowthEvent,
     signUpFamilyOnboarding,
-    updateChildGovernance
+    updateChildGovernance,
+    ensureAdminUserInSheet,
+    recordQuestionResponses,
+    getStudentAnswerSheet,
+    getNextPersonalizedCurriculum,
+    bulkUploadContentBatch
   };
 }

@@ -1356,6 +1356,9 @@
 </svg>
             <span>Add Habit Quest</span>
           </button>
+          <button onclick="openParentAnswerSheetModal()" id="btnOpenParentAnswerSheet" class="px-3.5 py-2 bg-[#1C5682] hover:bg-[#09293D] text-white font-sans text-xs font-bold rounded-none border border-[#D9E6EB] transition flex items-center space-x-1.5" title="View Detailed Answer Sheets & Question Responses">
+            <span>📝 Answer Sheet</span>
+          </button>
           <button onclick="returnToLanding(event)" id="btnParentReturnLanding" class="px-3.5 py-2 bg-[#F4F2EA] hover:bg-[#DED9D3] text-[#09293D] font-sans text-xs font-bold rounded-none border border-[#DED9D3] transition flex items-center space-x-1.5" title="Return to Landing Page">
             <span>🏠 Home</span>
           </button>
@@ -1952,6 +1955,9 @@
           <button id="adminTabBtnQuests" onclick="switchAdminTab('habits_quests')" class="px-3 py-1.5 text-xs font-bold rounded-none bg-transparent text-[#09293D] hover:bg-[#F4F2EA] transition flex items-center gap-1.5 whitespace-nowrap">
             <span>⭐ Quests &amp; Habits</span>
           </button>
+          <button id="adminTabBtnBulk" onclick="switchAdminTab('bulk_upload')" class="px-3 py-1.5 text-xs font-bold rounded-none bg-transparent text-[#09293D] hover:bg-[#F4F2EA] transition flex items-center gap-1.5 whitespace-nowrap">
+            <span>📦 Bulk Ingestion</span>
+          </button>
         </div>
 
         <!-- Filter & Search Bar -->
@@ -2033,6 +2039,60 @@
             </table>
           </div>
 
+        </div>
+
+        <!-- Bulk Content Ingestion Container -->
+        <div id="adminBulkUploadContainer" class="hidden bg-white border-2 border-[#09293D] p-5 space-y-4 font-sans">
+          <div class="flex items-center justify-between flex-wrap gap-2 border-b border-[#DED9D3] pb-3">
+            <div>
+              <h3 class="font-display font-bold text-sm text-[#09293D] uppercase tracking-wider">📦 Bulk Question &amp; Curriculum Batch Ingestion</h3>
+              <p class="text-xs text-[#666D57]">Ingest batches of questions or lessons in JSON format with automatic grade validation.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="loadSampleBulkBatchTemplate()" class="px-3 py-1.5 bg-[#F4F2EA] hover:bg-[#DED9D3] text-[#09293D] border border-[#DED9D3] text-xs font-bold transition">
+                📄 Load Sample JSON
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
+            <div>
+              <label class="block font-bold text-[#09293D] mb-1">Target Module / Content Type:</label>
+              <select id="bulkUploadContentType" class="w-full bg-[#F9F8F3] border border-[#DED9D3] p-2 text-xs font-bold text-[#09293D]">
+                <option value="CurriculumQuizzes">🎯 Curriculum Quizzes (CBSE / NCERT)</option>
+                <option value="DailyKnowledge">💡 Daily Knowledge &amp; GK</option>
+                <option value="Stories">📖 Story Quests</option>
+                <option value="EQScenarios">🧠 EQ Scenarios</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-[#09293D] mb-1">Default Grade Target:</label>
+              <select id="bulkUploadGrade" class="w-full bg-[#F9F8F3] border border-[#DED9D3] p-2 text-xs font-bold text-[#09293D]">
+                <option value="Class 1">Class 1</option>
+                <option value="Class 2">Class 2</option>
+                <option value="Class 3" selected>Class 3</option>
+                <option value="Class 4">Class 4</option>
+                <option value="Class 5">Class 5</option>
+                <option value="Class 6">Class 6</option>
+                <option value="Class 7">Class 7</option>
+                <option value="Class 8">Class 8</option>
+                <option value="Class 9">Class 9</option>
+                <option value="Class 10">Class 10</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-[#09293D] text-xs mb-1">JSON Batch Payload:</label>
+            <textarea id="bulkUploadPayload" rows="8" class="w-full font-mono text-xs p-3 bg-[#F9F8F3] border border-[#DED9D3] focus:border-[#09293D] focus:outline-none" placeholder='[{"questionText": "What is the capital of India?", "options": ["Mumbai", "New Delhi", "Kolkata", "Chennai"], "correctOptionIndex": 1, "explanation": "New Delhi is the national capital of India.", "grade": "Class 3"}]'></textarea>
+          </div>
+
+          <div class="flex items-center justify-between flex-wrap gap-2 pt-2 border-t border-[#DED9D3]">
+            <span id="bulkUploadStatus" class="text-xs font-bold text-[#666D57]">Ready to parse batch payload.</span>
+            <button type="button" id="btnSubmitBulkUpload" onclick="submitBulkContentUpload()" class="px-5 py-2.5 bg-[#F65800] hover:bg-[#F9A66E] text-white font-bold text-xs uppercase tracking-wider transition">
+              🚀 Ingest Batch
+            </button>
+          </div>
         </div>
 
       </div>
@@ -3027,6 +3087,80 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: PARENT ANSWER SHEET & QUESTION DRILLDOWN (#modal-parent-answersheet) -->
+  <!-- ========================================================================= -->
+  <div id="modal-parent-answersheet" class="hidden fixed inset-0 z-50 bg-[#09293D]/80 flex items-center justify-center p-4 overflow-y-auto font-sans">
+    <div class="bg-white border-2 border-[#09293D] rounded-none p-6 max-w-4xl w-full my-8 space-y-4 max-h-[90vh] flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-[#DED9D3] pb-3">
+        <div class="space-y-0.5">
+          <div class="flex items-center space-x-2">
+            <span class="bg-[#1C5682]/20 text-[#1C5682] font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 border border-[#1C5682]/40">Parent Drilldown</span>
+            <span id="answerSheetCadetBadge" class="bg-[#666D57]/20 text-[#666D57] font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 border border-[#666D57]/40">Cadet: Divyank (Class 3)</span>
+          </div>
+          <h3 class="font-display font-bold text-lg text-[#09293D] uppercase tracking-wider">Cadet Answer Sheet &amp; Question Responses</h3>
+          <p class="text-xs text-[#666D57]">Inspect question-by-question attempts, choices made, correct answers, and pedagogical hints.</p>
+        </div>
+        <button id="btnCloseParentAnswerSheetModal" onclick="closeParentAnswerSheetModal()" class="text-[#666D57] hover:text-[#09293D] font-bold text-xl px-2 py-1">✕</button>
+      </div>
+
+      <!-- Filter Controls Bar -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#F9F8F3] p-3 border border-[#DED9D3] text-xs">
+        <div>
+          <label class="block font-bold text-[#09293D] mb-1">Select Cadet:</label>
+          <select id="answerSheetChildSelect" onchange="onAnswerSheetChildChanged()" class="w-full bg-white border border-[#DED9D3] p-2 font-bold text-[#09293D]">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-[#09293D] mb-1">Filter Completion Session / Module:</label>
+          <select id="answerSheetSessionSelect" onchange="onAnswerSheetSessionChanged()" class="w-full bg-white border border-[#DED9D3] p-2 font-bold text-[#09293D]">
+            <option value="all">All Quiz &amp; Question Attempts (Latest First)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Summary Tiles -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+        <div class="bg-[#F4F2EA] border border-[#DED9D3] p-2.5">
+          <div class="text-[#666D57] text-[11px] font-bold uppercase">Questions Solved</div>
+          <div id="answerSheetTotalQuestions" class="font-display font-bold text-xl text-[#09293D]">0</div>
+        </div>
+        <div class="bg-[#DFE0C3]/60 border border-[#666D57] p-2.5">
+          <div class="text-[#666D57] text-[11px] font-bold uppercase">Correct Count</div>
+          <div id="answerSheetCorrectCount" class="font-display font-bold text-xl text-[#666D57]">0</div>
+        </div>
+        <div class="bg-[#F4F2EA] border border-[#DED9D3] p-2.5">
+          <div class="text-[#666D57] text-[11px] font-bold uppercase">Accuracy Rate</div>
+          <div id="answerSheetAccuracyPct" class="font-display font-bold text-xl text-[#09293D]">0%</div>
+        </div>
+        <div class="bg-[#F9A66E]/20 border border-[#F65800] p-2.5">
+          <div class="text-[#F65800] text-[11px] font-bold uppercase">Points Earned</div>
+          <div id="answerSheetTotalPoints" class="font-display font-bold text-xl text-[#F65800]">0 pts</div>
+        </div>
+      </div>
+
+      <!-- Question List Body (Scrollable) -->
+      <div class="flex-1 overflow-y-auto space-y-3 pr-1" style="min-height: 250px;">
+        <div id="answerSheetEmptyState" class="p-8 text-center text-xs text-[#666D57] font-bold border border-dashed border-[#DED9D3]">
+          No recorded question responses found for this student. Complete a quiz or daily knowledge sprint to see detailed answer logs!
+        </div>
+        <div id="answerSheetQuestionsContainer" class="space-y-3">
+          <!-- Populated dynamically via renderAnswerSheetQuestions() -->
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between border-t border-[#DED9D3] pt-3 text-xs">
+        <span class="text-[#666D57] text-[11px]">Strict isolation: parents inspect linked sibling answer sheets without data leakage.</span>
+        <button onclick="closeParentAnswerSheetModal()" class="px-5 py-2 bg-[#09293D] hover:bg-[#1C5682] text-white font-bold text-xs rounded-none transition">
+          Done Reviewing
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // =========================================================================
     // ZOPTRO DUAL-MODE BACKEND CLIENT & PERSISTENT BROWSER MOCK ENGINE
@@ -3160,6 +3294,7 @@ const BrowserMockBackend = {
     DAILY_KNOWLEDGE: 'zoptro_db_daily_knowledge',
     CURRICULUM_QUIZZES: 'zoptro_db_curriculum_quizzes',
     STUDENT_COMPLETIONS: 'zoptro_db_student_completions',
+    STUDENT_QUESTION_RESPONSES: 'zoptro_db_student_question_responses',
     STUDENT_GROWTH_PROFILES: 'zoptro_db_student_growth_profiles',
     SESSION: 'zoptro_session'
   },
@@ -3306,6 +3441,7 @@ const BrowserMockBackend = {
       case 'DailyKnowledge': return this.KEYS.DAILY_KNOWLEDGE;
       case 'CurriculumQuizzes': return this.KEYS.CURRICULUM_QUIZZES;
       case 'StudentCompletions': return this.KEYS.STUDENT_COMPLETIONS;
+      case 'StudentQuestionResponses': return this.KEYS.STUDENT_QUESTION_RESPONSES;
       case 'StudentGrowthProfiles': return this.KEYS.STUDENT_GROWTH_PROFILES;
       default: return null;
     }
@@ -3500,6 +3636,7 @@ const BrowserMockBackend = {
       this.KEYS.DAILY_KNOWLEDGE,
       this.KEYS.CURRICULUM_QUIZZES,
       this.KEYS.STUDENT_COMPLETIONS,
+      this.KEYS.STUDENT_QUESTION_RESPONSES,
       this.KEYS.STUDENT_GROWTH_PROFILES
     ];
 
@@ -3763,6 +3900,7 @@ const BrowserMockBackend = {
     this._setTable(this.KEYS.DAILY_KNOWLEDGE, []);
     this._setTable(this.KEYS.CURRICULUM_QUIZZES, []);
     this._setTable(this.KEYS.STUDENT_COMPLETIONS, []);
+    this._setTable(this.KEYS.STUDENT_QUESTION_RESPONSES, []);
     this._setTable(this.KEYS.STUDENT_GROWTH_PROFILES, []);
 
     this._ensureContentSeeds();
@@ -4750,6 +4888,17 @@ const BrowserMockBackend = {
     });
     this._setTable(this.KEYS.STUDENT_COMPLETIONS, completions);
 
+    if (Array.isArray(payload.questionResponses) && payload.questionResponses.length > 0) {
+      this.recordQuestionResponses({
+        studentId: student.id,
+        completionId: compId,
+        grade: effectiveGrade,
+        contentType: canonicalType,
+        contentId: item.id,
+        responses: payload.questionResponses
+      });
+    }
+
     const newCoins = (Number(student.coins) || 0) + coinsToAward;
     const newXp = (Number(student.xp) || 0) + xpToAward;
     const newLevel = Math.max(1, Math.floor(newXp / 250) + 1);
@@ -5581,6 +5730,281 @@ const BrowserMockBackend = {
     };
   },
 
+  recordQuestionResponses: function(payload) {
+    const studentId = payload && payload.studentId ? String(payload.studentId) : '';
+    const completionId = payload && payload.completionId ? String(payload.completionId) : '';
+    const responses = payload && payload.responses ? payload.responses : [];
+
+    if (!studentId || !Array.isArray(responses) || responses.length === 0) {
+      return { success: false, error: 'MISSING_FIELDS: studentId and responses array required.' };
+    }
+
+    const users = this._getTable(this.KEYS.USERS);
+    const student = users.find(u => String(u.id) === studentId);
+    if (!student) {
+      return { success: false, error: 'STUDENT_NOT_FOUND' };
+    }
+
+    const existingResponses = this._getTable(this.KEYS.STUDENT_QUESTION_RESPONSES);
+    const now = new Date();
+    const effectiveGrade = student.gradeClass || 'Class 3';
+    let insertedCount = 0;
+
+    responses.forEach((qr, idx) => {
+      const respId = 'sqr_' + now.getTime() + '_' + idx + '_' + Math.random().toString(36).substring(2, 6);
+      const isCorrect = qr.isCorrect !== undefined ? Boolean(qr.isCorrect) : (Number(qr.studentChoiceIndex) === Number(qr.correctOptionIndex));
+      existingResponses.push({
+        id: respId,
+        completionId: completionId || ('comp_' + now.getTime()),
+        studentId: student.id,
+        grade: qr.grade || effectiveGrade,
+        contentType: qr.contentType || 'curriculum_quiz',
+        contentId: qr.contentId || '',
+        questionId: qr.questionId || qr.id || ('q_' + (idx + 1)),
+        questionText: qr.questionText || qr.question || '',
+        optionsJson: typeof qr.options === 'string' ? qr.options : JSON.stringify(qr.options || []),
+        studentChoiceIndex: qr.studentChoiceIndex !== undefined ? Number(qr.studentChoiceIndex) : (qr.selectedIndex !== undefined ? Number(qr.selectedIndex) : -1),
+        studentChoiceText: qr.studentChoiceText || qr.selectedText || '',
+        correctOptionIndex: qr.correctOptionIndex !== undefined ? Number(qr.correctOptionIndex) : (qr.correctIndex !== undefined ? Number(qr.correctIndex) : 0),
+        isCorrect: isCorrect,
+        pointsEarned: qr.pointsEarned !== undefined ? Number(qr.pointsEarned) : 10,
+        explanation: qr.explanation || qr.hint || '',
+        timeSpentSeconds: qr.timeSpentSeconds !== undefined ? Number(qr.timeSpentSeconds) : 0,
+        answeredAt: now.toISOString()
+      });
+      insertedCount++;
+    });
+
+    this._setTable(this.KEYS.STUDENT_QUESTION_RESPONSES, existingResponses);
+
+    return {
+      success: true,
+      insertedCount: insertedCount,
+      completionId: completionId,
+      message: 'Successfully recorded ' + insertedCount + ' question responses.'
+    };
+  },
+
+  getStudentAnswerSheet: function(payload) {
+    const callerId = payload && payload.callerId ? String(payload.callerId) : (payload && payload.userId ? String(payload.userId) : '');
+    const studentId = payload && payload.studentId ? String(payload.studentId) : '';
+    const completionId = payload && payload.completionId ? String(payload.completionId) : null;
+    const contentId = payload && payload.contentId ? String(payload.contentId) : null;
+
+    if (!studentId) {
+      return { success: false, error: 'MISSING_STUDENT_ID' };
+    }
+
+    const users = this._getTable(this.KEYS.USERS);
+    const student = users.find(u => String(u.id) === studentId);
+    if (!student) {
+      return { success: false, error: 'STUDENT_NOT_FOUND' };
+    }
+
+    if (callerId) {
+      const caller = users.find(u => String(u.id) === callerId);
+      if (caller) {
+        const callerRole = String(caller.role).toLowerCase();
+        if (callerRole === 'parent') {
+          try {
+            this._assertParentPairing(callerId, studentId);
+          } catch (err) {
+            return { success: false, error: err.message, code: 403 };
+          }
+        } else if (callerRole === 'student' && callerId !== studentId) {
+          return { success: false, error: "UNAUTHORIZED: Cannot view another student's answer sheet.", code: 403 };
+        }
+      }
+    }
+
+    const completions = this._getTable(this.KEYS.STUDENT_COMPLETIONS).filter(c => {
+      return String(c.studentId) === studentId &&
+        (!completionId || String(c.id) === completionId) &&
+        (!contentId || String(c.contentId) === contentId);
+    });
+
+    const allResponses = this._getTable(this.KEYS.STUDENT_QUESTION_RESPONSES).filter(r => {
+      return String(r.studentId) === studentId &&
+        (!completionId || String(r.completionId) === completionId) &&
+        (!contentId || String(r.contentId) === contentId);
+    });
+
+    return {
+      success: true,
+      student: {
+        id: student.id,
+        fullName: student.fullName,
+        gradeClass: student.gradeClass || 'Class 3',
+        avatar: student.avatar || '🚀'
+      },
+      completions: completions,
+      questionResponses: allResponses,
+      totalQuestionsAnswered: allResponses.length,
+      correctCount: allResponses.filter(r => r.isCorrect === true || r.isCorrect === 'true').length
+    };
+  },
+
+  getNextPersonalizedCurriculum: function(payload) {
+    const studentId = payload && payload.studentId ? String(payload.studentId) : '';
+    const contentType = payload && payload.contentType ? String(payload.contentType) : 'CurriculumQuizzes';
+    const subject = payload && payload.subject ? String(payload.subject).toLowerCase() : null;
+
+    if (!studentId) {
+      return { success: false, error: 'MISSING_STUDENT_ID' };
+    }
+
+    const users = this._getTable(this.KEYS.USERS);
+    const student = users.find(u => String(u.id) === studentId);
+    if (!student) {
+      return { success: false, error: 'STUDENT_NOT_FOUND' };
+    }
+
+    const effectiveGrade = student.gradeClass || 'Class 3';
+    let canonicalType = 'CurriculumQuizzes';
+    if (/daily/i.test(contentType) || /gk/i.test(contentType)) canonicalType = 'DailyKnowledge';
+    else if (/story/i.test(contentType) || /lore/i.test(contentType)) canonicalType = 'Stories';
+    else if (/eq/i.test(contentType)) canonicalType = 'EQScenarios';
+
+    const tableKey = this._getContentKey(canonicalType);
+    const allContent = this._getTable(tableKey).filter(item => {
+      const gradeMatch = !item.grade || String(item.grade).toLowerCase() === effectiveGrade.toLowerCase();
+      const activeMatch = item.isActive !== false && item.isActive !== 'false' && item.isActive !== 0;
+      const subjectMatch = !subject || !item.subject || String(item.subject).toLowerCase() === subject;
+      return gradeMatch && activeMatch && subjectMatch;
+    });
+
+    allContent.sort((a, b) => (parseInt(a.orderIndex, 10) || 0) - (parseInt(b.orderIndex, 10) || 0));
+
+    const completions = this._getTable(this.KEYS.STUDENT_COMPLETIONS).filter(c => {
+      return String(c.studentId) === student.id && (String(c.contentType) === canonicalType || String(c.contentType) === contentType);
+    });
+    const completedIds = completions.map(c => String(c.contentId));
+
+    const uncompleted = allContent.filter(item => completedIds.indexOf(String(item.id)) === -1);
+
+    const pastResponses = this._getTable(this.KEYS.STUDENT_QUESTION_RESPONSES).filter(r => String(r.studentId) === student.id);
+    const totalAnswered = pastResponses.length;
+    const totalCorrect = pastResponses.filter(r => r.isCorrect === true || r.isCorrect === 'true').length;
+    const overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 100;
+
+    if (uncompleted.length === 0) {
+      return {
+        success: true,
+        studentId: student.id,
+        grade: effectiveGrade,
+        contentType: canonicalType,
+        hasMore: false,
+        isExhausted: true,
+        message: 'Curriculum for ' + effectiveGrade + ' (' + canonicalType + ') is 100% complete! Mastery unlocked 🌟',
+        completedCount: completedIds.length,
+        totalCount: allContent.length,
+        progressPercent: 100,
+        accuracy: overallAccuracy,
+        recommendedAction: 'MASTERY_CELEBRATION'
+      };
+    }
+
+    const nextItem = uncompleted[0];
+    const progressPct = allContent.length > 0 ? Math.round((completedIds.length / allContent.length) * 100) : 0;
+
+    return {
+      success: true,
+      studentId: student.id,
+      grade: effectiveGrade,
+      contentType: canonicalType,
+      hasMore: true,
+      item: nextItem,
+      completedCount: completedIds.length,
+      totalCount: allContent.length,
+      progressPercent: progressPct,
+      accuracy: overallAccuracy,
+      recommendedAction: overallAccuracy < 60 ? 'REINFORCEMENT_REVIEW' : 'NEXT_TOPIC'
+    };
+  },
+
+  bulkUploadContentBatch: function(payload) {
+    const adminUserId = payload && payload.adminUserId ? String(payload.adminUserId) : '';
+    const adminCheck = this._assertAdmin(adminUserId);
+    if (!adminCheck.success) {
+      return adminCheck;
+    }
+
+    const contentType = payload && payload.contentType ? String(payload.contentType) : 'CurriculumQuizzes';
+    let canonicalType = 'CurriculumQuizzes';
+    if (/daily/i.test(contentType) || /gk/i.test(contentType)) canonicalType = 'DailyKnowledge';
+    else if (/story/i.test(contentType)) canonicalType = 'Stories';
+    else if (/eq/i.test(contentType)) canonicalType = 'EQScenarios';
+
+    const items = payload && payload.items ? payload.items : [];
+    if (!Array.isArray(items) || items.length === 0) {
+      return { success: false, error: 'MISSING_ITEMS: Array of items is required.' };
+    }
+
+    const tableKey = this._getContentKey(canonicalType);
+    const table = this._getTable(tableKey);
+    const now = new Date().toISOString();
+    let importedCount = 0;
+
+    items.forEach((raw, idx) => {
+      const itemId = raw.id || (canonicalType.toLowerCase().substring(0, 4) + '_' + Date.now() + '_' + idx);
+      const grade = raw.grade || 'Class 3';
+      const record = {
+        id: itemId,
+        grade: grade,
+        isActive: raw.isActive !== undefined ? raw.isActive : true,
+        orderIndex: raw.orderIndex !== undefined ? Number(raw.orderIndex) : (table.length + idx + 1),
+        createdAt: now,
+        updatedAt: now
+      };
+
+      if (canonicalType === 'CurriculumQuizzes') {
+        record.subject = raw.subject || 'General Science';
+        record.examCategory = raw.examCategory || 'CBSE';
+        record.title = raw.title || raw.questionText || ('Quiz Item ' + (idx + 1));
+        record.questionText = raw.questionText || raw.title || '';
+        record.optionsJson = typeof raw.optionsJson === 'string' ? raw.optionsJson : JSON.stringify(raw.options || raw.optionsJson || []);
+        record.correctOptionIndex = raw.correctOptionIndex !== undefined ? Number(raw.correctOptionIndex) : 0;
+        record.hint = raw.hint || '';
+        record.explanation = raw.explanation || '';
+      } else if (canonicalType === 'DailyKnowledge') {
+        record.domain = raw.domain || 'World & Science';
+        record.topic = raw.topic || 'Daily Fact';
+        record.questionText = raw.questionText || '';
+        record.optionsJson = typeof raw.optionsJson === 'string' ? raw.optionsJson : JSON.stringify(raw.options || raw.optionsJson || []);
+        record.correctOptionIndex = raw.correctOptionIndex !== undefined ? Number(raw.correctOptionIndex) : 0;
+        record.didYouKnowFact = raw.didYouKnowFact || raw.fact || '';
+      } else if (canonicalType === 'Stories') {
+        record.title = raw.title || 'Adventure Story';
+        record.summary = raw.summary || '';
+        record.content = raw.content || '';
+        record.moralDilemma = raw.moralDilemma || '';
+        record.virtueTags = raw.virtueTags || 'Curiosity';
+        record.points = raw.points !== undefined ? Number(raw.points) : 25;
+        record.xp = raw.xp !== undefined ? Number(raw.xp) : 50;
+      } else if (canonicalType === 'EQScenarios') {
+        record.title = raw.title || 'EQ Dilemma';
+        record.dilemma = raw.dilemma || '';
+        record.virtueFocus = raw.virtueFocus || 'Integrity';
+        record.choicesJson = typeof raw.choicesJson === 'string' ? raw.choicesJson : JSON.stringify(raw.choices || []);
+        record.points = raw.points !== undefined ? Number(raw.points) : 20;
+        record.xp = raw.xp !== undefined ? Number(raw.xp) : 40;
+      }
+
+      table.push(record);
+      importedCount++;
+    });
+
+    this._setTable(tableKey, table);
+    this._log(adminUserId, 'BULK_UPLOAD', 'Batch imported ' + importedCount + ' items into ' + canonicalType, canonicalType, 'VERIFIED');
+
+    return {
+      success: true,
+      importedCount: importedCount,
+      contentType: canonicalType,
+      message: 'Successfully imported ' + importedCount + ' items into ' + canonicalType
+    };
+  },
+
   getCommanderData: function(payload) {
     const studentId = payload && payload.studentId ? String(payload.studentId) : 'u_stu_demo';
     const users = this._getTable(this.KEYS.USERS);
@@ -5775,6 +6199,12 @@ const ZoptroApiClient = {
   signUpFamilyOnboarding: function(payload) { return this.call('signUpFamilyOnboarding', payload); },
   registerFamily: function(payload) { return this.call('signUpFamilyOnboarding', payload); },
   updateChildGovernance: function(payload) { return this.call('updateChildGovernance', payload); },
+
+  // Milestone 3 Question-Level Tracking & Batch Progression APIs
+  recordQuestionResponses: function(payload) { return this.call('recordQuestionResponses', payload); },
+  getStudentAnswerSheet: function(payload) { return this.call('getStudentAnswerSheet', payload); },
+  getNextPersonalizedCurriculum: function(payload) { return this.call('getNextPersonalizedCurriculum', payload); },
+  bulkUploadContentBatch: function(payload) { return this.call('bulkUploadContentBatch', payload); },
 
   // Legacy API wrappers
   getCommanderData: function(payload) { return this.call('getCommanderData', payload); },
@@ -7338,13 +7768,39 @@ const ZoptroApiClient = {
       const studentGrade = getActiveStudentGrade();
       const contentId = (currentDailyGkItems && currentDailyGkItems[0]) ? currentDailyGkItems[0].id : 'gk_c3_01';
 
+      const qResponses = [];
+      if (Array.isArray(currentDailyGkItems)) {
+        currentDailyGkItems.forEach((item, idx) => {
+          const qId = item.id || idx;
+          const userChoice = gkUserAnswers[qId];
+          const correctIdx = item.correctAnswerIndex !== undefined ? item.correctAnswerIndex : (item.correct || 0);
+          const opts = Array.isArray(item.options) ? item.options : [];
+          const isCorr = (userChoice !== undefined && Number(userChoice) === Number(correctIdx));
+          qResponses.push({
+            grade: studentGrade,
+            contentType: 'daily_knowledge',
+            contentId: item.id || contentId,
+            questionId: item.id || ('gk_q_' + (idx + 1)),
+            questionText: item.questionText || item.question || '',
+            options: opts,
+            studentChoiceIndex: userChoice !== undefined ? Number(userChoice) : -1,
+            studentChoiceText: (userChoice !== undefined && opts[userChoice]) ? opts[userChoice] : '',
+            correctOptionIndex: Number(correctIdx),
+            isCorrect: isCorr,
+            pointsEarned: isCorr ? 10 : 0,
+            explanation: item.didYouKnowFact || item.explanation || ''
+          });
+        });
+      }
+
       if (typeof ZoptroApiClient !== 'undefined') {
         ZoptroApiClient.recordContentCompletion({
           studentId: studentId,
           contentType: 'daily_knowledge',
           contentId: contentId,
           score: 100,
-          answers: gkUserAnswers
+          answers: gkUserAnswers,
+          questionResponses: qResponses
         }).then(function(res) {
           if (res && res.success) {
             focusCoins = (res.coins !== undefined) ? res.coins : (focusCoins + 20);
@@ -7561,6 +8017,35 @@ const ZoptroApiClient = {
         } else {
           playSound('wrong');
           feedback.innerHTML = '💡 <strong>Good Attempt!</strong> The correct answer is highlighted.<br>' + fact;
+        }
+      }
+
+      if (typeof ZoptroApiClient !== 'undefined') {
+        const studentId = getActiveStudentId();
+        const activeQuiz = currentCurriculumQuizzes.find(q => q.id === currentSelectedExamKey) || currentCurriculumQuizzes[0];
+        const list = (activeQuiz && Array.isArray(activeQuiz.questions)) ? activeQuiz.questions : [];
+        const item = list[currentDailyPracticeIdx];
+        if (item) {
+          const isCorrect = (selected === correct);
+          const opts = Array.isArray(item.options) ? item.options : (item.opts || []);
+          ZoptroApiClient.recordQuestionResponses({
+            studentId: studentId,
+            completionId: 'comp_practice_' + (activeQuiz ? activeQuiz.id : 'exam') + '_' + (new Date().toISOString().substring(0, 10)),
+            responses: [{
+              grade: getActiveStudentGrade(),
+              contentType: 'curriculum_quiz',
+              contentId: activeQuiz ? activeQuiz.id : 'exam_practice',
+              questionId: item.id || ('pyqp_q_' + (currentDailyPracticeIdx + 1)),
+              questionText: item.question || item.q || '',
+              options: opts,
+              studentChoiceIndex: selected,
+              studentChoiceText: opts[selected] || '',
+              correctOptionIndex: correct,
+              isCorrect: isCorrect,
+              pointsEarned: isCorrect ? 15 : 0,
+              explanation: fact
+            }]
+          }).catch(function(e) { console.warn('Practice Q logging notice:', e); });
         }
       }
     }
@@ -7993,13 +8478,37 @@ const ZoptroApiClient = {
       const studentId = getActiveStudentId();
       const contentId = currentStoryData ? currentStoryData.id : 'story_01';
 
+      const qResponses = [];
+      if (currentStoryData) {
+        const qList = currentStoryData.questions || currentStoryData.reflectionQuestions || [];
+        qList.forEach((q, idx) => {
+          const choice = currentStoryAnswers[idx];
+          const opts = q.options || [];
+          qResponses.push({
+            grade: getActiveStudentGrade(),
+            contentType: 'story',
+            contentId: contentId,
+            questionId: q.id || ('story_q_' + (idx + 1)),
+            questionText: q.question || q.text || 'Story reflection',
+            options: opts,
+            studentChoiceIndex: choice !== undefined ? Number(choice) : 0,
+            studentChoiceText: (choice !== undefined && opts[choice]) ? opts[choice] : '',
+            correctOptionIndex: q.correctAnswerIndex !== undefined ? Number(q.correctAnswerIndex) : 0,
+            isCorrect: true,
+            pointsEarned: 20,
+            explanation: q.takeaway || 'Virtue reflection completed.'
+          });
+        });
+      }
+
       if (typeof ZoptroApiClient !== 'undefined') {
         ZoptroApiClient.recordContentCompletion({
           studentId: studentId,
           contentType: 'story',
           contentId: contentId,
           score: 100,
-          answers: currentStoryAnswers
+          answers: currentStoryAnswers,
+          questionResponses: qResponses
         }).then(function(res) {
           if (res && res.success) {
             focusCoins = (res.coins !== undefined) ? res.coins : (focusCoins + 20);
@@ -8177,13 +8686,29 @@ const ZoptroApiClient = {
       const contentId = currentEqData ? currentEqData.id : 'eq_01';
       const reflectionText = document.getElementById('eqPersonalNote') ? document.getElementById('eqPersonalNote').value : '';
 
+      const eqResponses = [{
+        grade: getActiveStudentGrade(),
+        contentType: 'eq_scenario',
+        contentId: contentId,
+        questionId: currentEqData ? currentEqData.id : 'eq_q_1',
+        questionText: currentEqData ? (currentEqData.dilemma || currentEqData.title) : 'EQ Dilemma Reflection',
+        options: (currentEqData && Array.isArray(currentEqData.choices)) ? currentEqData.choices.map(c => c.text || c) : [],
+        studentChoiceIndex: ['A', 'B', 'C', 'D'].indexOf(currentEqChoice),
+        studentChoiceText: currentEqChoice + ': ' + reflectionText,
+        correctOptionIndex: 0,
+        isCorrect: true,
+        pointsEarned: 25,
+        explanation: 'Emotional intelligence reflection recorded.'
+      }];
+
       if (typeof ZoptroApiClient !== 'undefined') {
         ZoptroApiClient.recordContentCompletion({
           studentId: studentId,
           contentType: 'eq_scenario',
           contentId: contentId,
           score: 100,
-          answers: { choice: currentEqChoice, reflection: reflectionText }
+          answers: { choice: currentEqChoice, reflection: reflectionText },
+          questionResponses: eqResponses
         }).then(function(res) {
           if (res && res.success) {
             focusCoins = (res.coins !== undefined) ? res.coins : (focusCoins + 25);
@@ -9253,14 +9778,15 @@ const ZoptroApiClient = {
     function switchAdminTab(tab) {
       playSound('coin');
       currentAdminTab = tab;
-      const tabs = ['stories', 'eq_scenarios', 'daily_knowledge', 'curriculum_quizzes', 'habits_quests'];
+      const tabs = ['stories', 'eq_scenarios', 'daily_knowledge', 'curriculum_quizzes', 'habits_quests', 'bulk_upload'];
       tabs.forEach(function(t) {
         const idMap = {
           stories: 'adminTabBtnStories',
           eq_scenarios: 'adminTabBtnEq',
           daily_knowledge: 'adminTabBtnDailyGk',
           curriculum_quizzes: 'adminTabBtnQuizzes',
-          habits_quests: 'adminTabBtnQuests'
+          habits_quests: 'adminTabBtnQuests',
+          bulk_upload: 'adminTabBtnBulk'
         };
         const btn = document.getElementById(idMap[t]);
         if (btn) {
@@ -9271,7 +9797,401 @@ const ZoptroApiClient = {
           }
         }
       });
-      fetchAdminContentList();
+
+      const bulkContainer = document.getElementById('adminBulkUploadContainer');
+      const table = document.getElementById('adminContentTable');
+      const empty = document.getElementById('adminEmptyState');
+      const spinner = document.getElementById('adminLoadingSpinner');
+      const searchBox = document.getElementById('adminSearchInput') ? document.getElementById('adminSearchInput').closest('.bg-white') : null;
+
+      if (tab === 'bulk_upload') {
+        if (bulkContainer) bulkContainer.classList.remove('hidden');
+        if (table) table.classList.add('hidden');
+        if (empty) empty.classList.add('hidden');
+        if (spinner) spinner.classList.add('hidden');
+        if (searchBox) searchBox.classList.add('hidden');
+      } else {
+        if (bulkContainer) bulkContainer.classList.add('hidden');
+        if (searchBox) searchBox.classList.remove('hidden');
+        fetchAdminContentList();
+      }
+    }
+
+    function loadSampleBulkBatchTemplate() {
+      const typeSelect = document.getElementById('bulkUploadContentType');
+      const gradeSelect = document.getElementById('bulkUploadGrade');
+      const payloadArea = document.getElementById('bulkUploadPayload');
+      if (!payloadArea) return;
+
+      const type = typeSelect ? typeSelect.value : 'CurriculumQuizzes';
+      const grade = gradeSelect ? gradeSelect.value : 'Class 3';
+
+      if (type === 'CurriculumQuizzes') {
+        payloadArea.value = JSON.stringify([
+          {
+            grade: grade,
+            subject: "Environmental Studies",
+            examCategory: "CBSE",
+            title: "Photosynthesis and Plant Roots",
+            questionText: "Which part of the plant absorbs water and minerals from the soil?",
+            options: ["Stem", "Roots", "Leaves", "Flowers"],
+            correctOptionIndex: 1,
+            hint: "Think about which part grows underground.",
+            explanation: "Roots anchor the plant into soil and absorb essential water and dissolved minerals.",
+            isActive: true,
+            orderIndex: 1
+          },
+          {
+            grade: grade,
+            subject: "Mathematics",
+            examCategory: "CBSE",
+            title: "Multiplication Arrays",
+            questionText: "If there are 4 rows with 6 apples in each row, how many apples are there in total?",
+            options: ["20", "22", "24", "26"],
+            correctOptionIndex: 2,
+            hint: "Calculate 4 multiplied by 6.",
+            explanation: "4 rows × 6 apples per row = 24 total apples.",
+            isActive: true,
+            orderIndex: 2
+          }
+        ], null, 2);
+      } else if (type === 'DailyKnowledge') {
+        payloadArea.value = JSON.stringify([
+          {
+            grade: grade,
+            domain: "Space Exploration",
+            topic: "Solar System",
+            questionText: "Which planet is known as the Red Planet?",
+            options: ["Venus", "Mars", "Jupiter", "Saturn"],
+            correctOptionIndex: 1,
+            didYouKnowFact: "Mars appears red because of iron oxide (rust) on its surface!",
+            isActive: true,
+            orderIndex: 1
+          }
+        ], null, 2);
+      } else if (type === 'Stories') {
+        payloadArea.value = JSON.stringify([
+          {
+            grade: grade,
+            title: "The Mystery of the Solar Compass",
+            summary: "A thrilling adventure where cadet Maya navigates using solar angles.",
+            content: "Maya adjusted her compass dial as the morning sun cast long shadows...",
+            moralDilemma: "Should Maya share the secret compass code with her rival team?",
+            virtueTags: "Curiosity, Honesty",
+            points: 25,
+            xp: 50,
+            isActive: true
+          }
+        ], null, 2);
+      } else {
+        payloadArea.value = JSON.stringify([
+          {
+            grade: grade,
+            title: "The Broken Trophy",
+            dilemma: "While playing soccer, Divyank accidentally kicked the ball into the trophy shelf. Should he speak up immediately?",
+            virtueFocus: "Courage & Integrity",
+            choices: [
+              { text: "Own up immediately and apologize to the principal", category: "Courage" },
+              { text: "Help clean up without mentioning who kicked it", category: "Helpfulness" }
+            ],
+            points: 20,
+            xp: 40,
+            isActive: true
+          }
+        ], null, 2);
+      }
+
+      const status = document.getElementById('bulkUploadStatus');
+      if (status) status.innerText = "Loaded sample template for " + type + " (" + grade + ").";
+    }
+
+    function submitBulkContentUpload() {
+      const typeSelect = document.getElementById('bulkUploadContentType');
+      const gradeSelect = document.getElementById('bulkUploadGrade');
+      const payloadArea = document.getElementById('bulkUploadPayload');
+      const status = document.getElementById('bulkUploadStatus');
+      const submitBtn = document.getElementById('btnSubmitBulkUpload');
+
+      if (!payloadArea || !payloadArea.value.trim()) {
+        alertCustom("Missing Payload", "Please paste or load a valid JSON batch array before uploading.");
+        return;
+      }
+
+      let parsedItems;
+      try {
+        parsedItems = JSON.parse(payloadArea.value.trim());
+        if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+          throw new Error("Batch payload must be a non-empty array of items.");
+        }
+      } catch (err) {
+        alertCustom("Invalid JSON Syntax", "Failed to parse batch payload: " + err.message);
+        if (status) status.innerText = "JSON Error: " + err.message;
+        return;
+      }
+
+      const contentType = typeSelect ? typeSelect.value : 'CurriculumQuizzes';
+      const defaultGrade = gradeSelect ? gradeSelect.value : 'Class 3';
+
+      parsedItems.forEach(item => {
+        if (!item.grade) item.grade = defaultGrade;
+      });
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Ingesting Batch...";
+      }
+      if (status) status.innerText = "Uploading " + parsedItems.length + " items to " + contentType + "...";
+
+      const adminUser = (typeof getActiveSessionUser === 'function') ? getActiveSessionUser() : { id: 'u_adm_demo' };
+      const adminId = (adminUser && (adminUser.role === 'admin' || adminUser.id === 'u_adm_demo')) ? adminUser.id : 'u_adm_demo';
+
+      ZoptroApiClient.bulkUploadContentBatch({
+        adminUserId: adminId,
+        contentType: contentType,
+        items: parsedItems
+      }).then(function(res) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "🚀 Ingest Batch";
+        }
+        if (res && res.success) {
+          playSound('correct');
+          spawnConfetti();
+          if (status) status.innerText = "Successfully ingested " + res.importedCount + " items into " + contentType + "!";
+          alertCustom("Batch Ingestion Complete! 📦", "Successfully imported " + res.importedCount + " curriculum items into " + contentType + " for " + defaultGrade + ".");
+          payloadArea.value = "";
+        } else {
+          playSound('wrong');
+          const errMsg = (res && res.error) ? res.error : "Unknown ingestion failure.";
+          if (status) status.innerText = "Ingestion failed: " + errMsg;
+          alertCustom("Ingestion Error", errMsg);
+        }
+      }).catch(function(err) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "🚀 Ingest Batch";
+        }
+        const errMsg = err && err.message ? err.message : String(err);
+        if (status) status.innerText = "Network Error: " + errMsg;
+        alertCustom("Upload Failed", errMsg);
+      });
+    }
+
+    // ==========================================
+    // PARENT ANSWER SHEET & QUESTION DRILLDOWN
+    // ==========================================
+    var currentAnswerSheetData = null;
+
+    function openParentAnswerSheetModal() {
+      const modal = document.getElementById('modal-parent-answersheet');
+      if (!modal) return;
+      playSound('coin');
+      modal.classList.remove('hidden');
+
+      populateAnswerSheetCadetDropdown();
+      const childSelect = document.getElementById('answerSheetChildSelect');
+      const targetStudentId = (childSelect && childSelect.value) ? childSelect.value : (activeChildId || 'u_stu_demo');
+      loadParentAnswerSheet(targetStudentId);
+    }
+
+    function closeParentAnswerSheetModal() {
+      const modal = document.getElementById('modal-parent-answersheet');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function populateAnswerSheetCadetDropdown() {
+      const select = document.getElementById('answerSheetChildSelect');
+      if (!select) return;
+      select.innerHTML = '';
+
+      const roster = (linkedChildren && linkedChildren.length > 0) ? linkedChildren : [
+        { id: 'u_stu_demo', fullName: 'Commander Divyank', gradeClass: 'Class 3' },
+        { id: 'u_stu_priya', fullName: 'Cadet Priya', gradeClass: 'Class 5' }
+      ];
+
+      roster.forEach(child => {
+        const opt = document.createElement('option');
+        opt.value = child.id;
+        opt.innerText = child.fullName + ' (' + (child.gradeClass || child.grade || 'Class 3') + ')';
+        if (child.id === activeChildId) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function onAnswerSheetChildChanged() {
+      const select = document.getElementById('answerSheetChildSelect');
+      if (!select) return;
+      playSound('coin');
+      loadParentAnswerSheet(select.value);
+    }
+
+    function loadParentAnswerSheet(studentId) {
+      const parentUser = (typeof getActiveSessionUser === 'function') ? getActiveSessionUser() : { id: 'u_par_demo' };
+      const parentId = (parentUser && parentUser.id) ? parentUser.id : 'u_par_demo';
+
+      const cadetBadge = document.getElementById('answerSheetCadetBadge');
+      if (cadetBadge) cadetBadge.innerText = 'Loading Answer Sheet...';
+
+      ZoptroApiClient.getStudentAnswerSheet({
+        callerId: parentId,
+        studentId: studentId
+      }).then(function(res) {
+        if (res && res.success) {
+          currentAnswerSheetData = res;
+          if (cadetBadge) {
+            cadetBadge.innerText = 'Cadet: ' + (res.student ? res.student.fullName : 'Divyank') + ' (' + (res.student ? res.student.gradeClass : 'Class 3') + ')';
+          }
+          populateAnswerSheetSessionFilter(res.completions);
+          renderAnswerSheetQuestions(res.questionResponses || []);
+        } else {
+          console.warn('Failed to load answer sheet:', res);
+          currentAnswerSheetData = null;
+          renderAnswerSheetQuestions([]);
+        }
+      }).catch(function(err) {
+        console.warn('Answer sheet query error:', err);
+        currentAnswerSheetData = null;
+        renderAnswerSheetQuestions([]);
+      });
+    }
+
+    function populateAnswerSheetSessionFilter(completions) {
+      const select = document.getElementById('answerSheetSessionSelect');
+      if (!select) return;
+      select.innerHTML = '<option value="all">All Quiz &amp; Question Attempts (Latest First)</option>';
+
+      if (Array.isArray(completions)) {
+        completions.forEach((c, idx) => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          const dateStr = c.completedAt ? c.completedAt.split('T')[0] : ('Session ' + (idx + 1));
+          opt.innerText = (c.contentType || 'Quiz').toUpperCase() + ' • ' + dateStr + ' • Score: ' + (c.score || 100);
+          select.appendChild(opt);
+        });
+      }
+    }
+
+    function onAnswerSheetSessionChanged() {
+      const select = document.getElementById('answerSheetSessionSelect');
+      if (!select || !currentAnswerSheetData) return;
+      const completionId = select.value;
+      const responses = currentAnswerSheetData.questionResponses || [];
+      if (completionId === 'all') {
+        renderAnswerSheetQuestions(responses);
+      } else {
+        const filtered = responses.filter(r => String(r.completionId) === String(completionId));
+        renderAnswerSheetQuestions(filtered);
+      }
+    }
+
+    function renderAnswerSheetQuestions(responses) {
+      const container = document.getElementById('answerSheetQuestionsContainer');
+      const empty = document.getElementById('answerSheetEmptyState');
+      const totalEl = document.getElementById('answerSheetTotalQuestions');
+      const correctEl = document.getElementById('answerSheetCorrectCount');
+      const accEl = document.getElementById('answerSheetAccuracyPct');
+      const ptsEl = document.getElementById('answerSheetTotalPoints');
+
+      if (!container) return;
+      container.innerHTML = '';
+
+      const list = Array.isArray(responses) ? responses : [];
+      const total = list.length;
+      const correct = list.filter(r => r.isCorrect === true || r.isCorrect === 'true').length;
+      const accPct = total > 0 ? Math.round((correct / total) * 100) : 0;
+      let totalPts = 0;
+      list.forEach(r => { totalPts += (Number(r.pointsEarned) || 0); });
+
+      if (totalEl) totalEl.innerText = total;
+      if (correctEl) correctEl.innerText = correct;
+      if (accEl) accEl.innerText = accPct + '%';
+      if (ptsEl) ptsEl.innerText = totalPts + ' pts';
+
+      if (total === 0) {
+        if (empty) empty.classList.remove('hidden');
+        return;
+      }
+      if (empty) empty.classList.add('hidden');
+
+      list.forEach((q, idx) => {
+        const card = document.createElement('div');
+        const isCorr = (q.isCorrect === true || q.isCorrect === 'true');
+        const borderColor = isCorr ? 'border-[#666D57]' : 'border-[#D80707]';
+        const badgeBg = isCorr ? 'bg-[#DFE0C3] text-[#09293D]' : 'bg-[#F4F2EA] text-[#D80707]';
+        const badgeText = isCorr ? '✔ Correct (+ ' + (q.pointsEarned || 10) + ' pts)' : '✖ Incorrect (0 pts)';
+
+        let opts = [];
+        if (typeof q.optionsJson === 'string') {
+          try { opts = JSON.parse(q.optionsJson); } catch (e) { opts = []; }
+        } else if (Array.isArray(q.options)) {
+          opts = q.options;
+        }
+
+        const studentChoiceIdx = Number(q.studentChoiceIndex);
+        const correctIdx = Number(q.correctOptionIndex);
+
+        let optionsMarkup = '';
+        if (Array.isArray(opts) && opts.length > 0) {
+          optionsMarkup = '<div class="space-y-1 pt-2">';
+          opts.forEach((optText, oIdx) => {
+            let optStyle = 'border border-[#DED9D3] bg-[#F9F8F3] text-[#09293D]';
+            let icon = '•';
+            if (oIdx === correctIdx) {
+              optStyle = 'border-2 border-[#666D57] bg-[#DFE0C3] text-[#09293D] font-bold';
+              icon = '✔ [Correct Answer]';
+            }
+            if (oIdx === studentChoiceIdx && !isCorr) {
+              optStyle = 'border-2 border-[#D80707] bg-[#F4F2EA] text-[#D80707] font-bold';
+              icon = '✖ [Cadet Choice]';
+            } else if (oIdx === studentChoiceIdx && isCorr) {
+              icon = '✔ [Cadet Choice]';
+            }
+            optionsMarkup += `
+              <div class="p-2 text-xs font-sans rounded-none flex items-center justify-between ${optStyle}">
+                <span>${String.fromCharCode(65 + oIdx)}. ${optText}</span>
+                <span class="text-[10px] uppercase font-bold tracking-wider">${icon}</span>
+              </div>
+            `;
+          });
+          optionsMarkup += '</div>';
+        } else {
+          optionsMarkup = `
+            <div class="p-2 bg-[#F9F8F3] border border-[#DED9D3] text-xs font-sans text-[#09293D] mt-2">
+              <strong>Cadet Choice:</strong> ${q.studentChoiceText || 'Submitted response'}
+            </div>
+          `;
+        }
+
+        card.className = `bg-white border-2 ${borderColor} p-4 rounded-none space-y-2 font-sans`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between flex-wrap gap-2 border-b border-[#DED9D3] pb-2">
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-xs text-[#09293D]">Question #${idx + 1}</span>
+              <span class="text-[10px] uppercase font-mono px-2 py-0.5 bg-[#F4F2EA] border border-[#DED9D3] text-[#666D57] font-bold">${q.contentType || 'Quiz'}</span>
+              <span class="text-[10px] text-[#666D57] font-bold">${q.grade || 'Class 3'}</span>
+            </div>
+            <span class="text-xs px-2.5 py-0.5 rounded-none font-bold ${badgeBg}">${badgeText}</span>
+          </div>
+
+          <div class="text-xs font-bold text-[#09293D] pt-1">
+            ${q.questionText || 'Curriculum assessment question'}
+          </div>
+
+          ${optionsMarkup}
+
+          ${q.explanation ? `
+            <div class="mt-2 p-2.5 bg-[#F4F2EA] border-l-4 border-[#09293D] text-[11px] text-[#09293D]">
+              <strong>💡 Pedagogical Strategy &amp; Explanation:</strong> ${q.explanation}
+            </div>
+          ` : ''}
+
+          <div class="flex items-center justify-between text-[10px] text-[#666D57] pt-1 border-t border-[#DED9D3]">
+            <span>Time logged: ${q.timeSpentSeconds || 0}s</span>
+            <span>Answered: ${q.answeredAt ? q.answeredAt.replace('T', ' ').substring(0, 19) : 'Today'}</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
     }
 
     function loadAdminContent() {
@@ -9288,6 +10208,11 @@ const ZoptroApiClient = {
       if (table) table.classList.add('hidden');
       if (empty) empty.classList.add('hidden');
       if (lockPill) lockPill.innerText = "LockService: Querying...";
+
+      if (currentAdminTab === 'bulk_upload') {
+        if (spinner) spinner.classList.add('hidden');
+        return;
+      }
 
       if (currentAdminTab === 'habits_quests') {
         ZoptroApiClient.getHabitsAndQuests({ parentUserId: '' }).then(function(res) {
