@@ -10,6 +10,7 @@
  * - Tier 4: Real-World Scenarios (>=6 realistic workflows)
  * - Tier 5: 1-to-N Multi-Child Backend & State Isolation (>=30 tests)
  * - Tier 6: 1-to-N Multi-Child Frontend SPA & Parent HQ (>=22 tests)
+ * - Tier 7: Milestone 6 Landing Page & Global Navigation (>=28 tests)
  *
  * Usage:
  *   node tests/run_tests.js
@@ -19,6 +20,7 @@
  *   node tests/run_tests.js --tier=4
  *   node tests/run_tests.js --tier=5
  *   node tests/run_tests.js --tier=6
+ *   node tests/run_tests.js --tier=7
  */
 
 const path = require('node:path');
@@ -40,7 +42,8 @@ async function main() {
     { tier: 3, name: 'Tier 3: Pairwise Combinatorial Interactions', file: './tier3_pairwise_combinations.test.js', minExpected: 19 },
     { tier: 4, name: 'Tier 4: Real-World End-to-End Workflows', file: './tier4_real_world_scenarios.test.js', minExpected: 6 },
     { tier: 5, name: 'Tier 5: 1-to-N Multi-Child Backend & State Isolation', file: './test_multichild_backend_and_isolation.js', minExpected: 30 },
-    { tier: 6, name: 'Tier 6: 1-to-N Multi-Child Frontend SPA & Parent HQ', file: './test_multichild_frontend_hq.js', minExpected: 22 }
+    { tier: 6, name: 'Tier 6: 1-to-N Multi-Child Frontend SPA & Parent HQ', file: './test_multichild_frontend_hq.js', minExpected: 22 },
+    { tier: 7, name: 'Tier 7: Milestone 6 Landing Page & Global Navigation', file: './test_milestone6_landing_page.js', minExpected: 28 }
   ];
 
   const tiersToRun = requestedTier
@@ -48,7 +51,7 @@ async function main() {
     : allTiers;
 
   if (tiersToRun.length === 0) {
-    console.error(`\x1b[31mInvalid tier requested: --tier=${requestedTier}. Valid options are 1, 2, 3, 4, 5, 6.\x1b[0m`);
+    console.error(`\x1b[31mInvalid tier requested: --tier=${requestedTier}. Valid options are 1, 2, 3, 4, 5, 6, 7.\x1b[0m`);
     process.exit(1);
   }
 
@@ -114,12 +117,12 @@ async function main() {
   }
 
   console.log('-------------------------------------------------------------------------');
-  console.log(`Grand Total Tests Executed: \x1b[1m${grandTotalTests}\x1b[0m (Threshold: >=268 tests)`);
+  console.log(`Grand Total Tests Executed: \x1b[1m${grandTotalTests}\x1b[0m (Threshold: >=296 tests)`);
   console.log(`Total Passed: \x1b[1m\x1b[32m${grandTotalPassed}\x1b[0m`);
   console.log(`Total Failed: \x1b[1m${grandTotalFailed === 0 ? '\x1b[32m0\x1b[0m' : `\x1b[31m${grandTotalFailed}\x1b[0m`}`);
   console.log(`Execution Time: ${grandTotalDuration}ms`);
 
-  const passed = grandTotalFailed === 0 && allThresholdsMet && (requestedTier || grandTotalTests >= 268);
+  const passed = grandTotalFailed === 0 && allThresholdsMet && (requestedTier || grandTotalTests >= 296);
 
   if (passed) {
     console.log('\n\x1b[1m\x1b[42m\x1b[30m  ALL TEST TIERS PASSED PERFECTLY (100% SUCCESS)  \x1b[0m\n');
