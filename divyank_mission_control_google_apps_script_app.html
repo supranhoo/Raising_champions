@@ -1958,6 +1958,9 @@
           <button id="adminTabBtnBulk" onclick="switchAdminTab('bulk_upload')" class="px-3 py-1.5 text-xs font-bold rounded-none bg-transparent text-[#09293D] hover:bg-[#F4F2EA] transition flex items-center gap-1.5 whitespace-nowrap">
             <span>📦 Bulk Ingestion</span>
           </button>
+          <button id="adminTabBtnAiGenerate" onclick="switchAdminTab('ai_generate')" class="px-3 py-1.5 text-xs font-bold rounded-none bg-transparent text-[#09293D] hover:bg-[#F4F2EA] transition flex items-center gap-1.5 whitespace-nowrap">
+            <span>✨ AI Generator</span>
+          </button>
         </div>
 
         <!-- Filter & Search Bar -->
@@ -2093,6 +2096,295 @@
               🚀 Ingest Batch
             </button>
           </div>
+        </div>
+
+        <!-- Admin AI Content Studio Container (#adminAiGenerateContainer) -->
+        <div id="adminAiGenerateContainer" class="hidden bg-white border-2 border-[#09293D] rounded-none p-5 space-y-6 font-sans">
+          
+          <!-- Header & Status Badges -->
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-[#DED9D3] pb-4">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2 flex-wrap gap-1">
+                <span class="bg-[#F4F2EA] border border-[#09293D] text-[#09293D] text-[10px] font-bold px-2 py-0.5 rounded-none uppercase tracking-wider">
+                  Google AI Studio Free Tier
+                </span>
+                <span class="bg-[#1C5682]/10 border border-[#1C5682] text-[#1C5682] text-[10px] font-bold px-2 py-0.5 rounded-none uppercase tracking-wider">
+                  Gemini 1.5 &amp; 2.0 Flash
+                </span>
+                <span class="bg-[#7FBF19]/20 border border-[#7FBF19] text-[#09293D] text-[10px] font-bold px-2 py-0.5 rounded-none uppercase tracking-wider">
+                  SHA-256 Deduplication Active
+                </span>
+                <span class="bg-[#F65800]/10 border border-[#F65800] text-[#F65800] text-[10px] font-bold px-2 py-0.5 rounded-none uppercase tracking-wider">
+                  15 RPM · 1,500 RPD Rate Guard
+                </span>
+              </div>
+              <h3 class="text-lg font-display font-bold text-[#09293D] uppercase tracking-wider flex items-center gap-2">
+                <span>🤖 Gemini AI Curriculum Content Studio</span>
+              </h3>
+              <p class="text-xs text-[#666D57] max-w-3xl">
+                Automated CBSE/NCERT curriculum question synthesizer powered by Google Gemini Flash models. Includes real-time quota telemetry, token controls, and direct database commitment.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" onclick="fetchGeminiQuotaStatus()" class="px-3 py-1.5 bg-[#F4F2EA] hover:bg-[#DED9D3] text-[#09293D] border border-[#DED9D3] text-xs font-bold rounded-none transition flex items-center gap-1 cursor-pointer">
+                <span>↻ Refresh Quota HUD</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Real-Time Quota HUD & Token Meter Cards -->
+          <div id="adminGeminiQuotaHud" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 font-sans">
+            
+            <!-- Card 1: RPM Remaining -->
+            <div class="bg-[#F9F8F3] border border-[#DED9D3] rounded-none p-3.5 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#666D57] uppercase tracking-wider">RPM Remaining</span>
+                <span class="text-[10px] font-bold text-[#1C5682] bg-white px-1.5 py-0.5 border border-[#DED9D3] rounded-none">60s Window</span>
+              </div>
+              <div id="aiHudRpm" class="text-lg font-bold font-display text-[#09293D]">15 / 15 RPM</div>
+              <div class="w-full bg-[#DED9D3] h-1.5 mt-2 rounded-none overflow-hidden">
+                <div id="aiHudRpmBar" class="bg-[#7FBF19] h-1.5 rounded-none transition-all duration-300" style="width: 100%;"></div>
+              </div>
+              <div class="text-[10px] text-[#666D57] pt-1">Sliding window rate limit</div>
+            </div>
+
+            <!-- Card 2: Daily Quota Remaining -->
+            <div class="bg-[#F9F8F3] border border-[#DED9D3] rounded-none p-3.5 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#666D57] uppercase tracking-wider">Daily Quota (RPD)</span>
+                <span class="text-[10px] font-bold text-[#666D57] bg-white px-1.5 py-0.5 border border-[#DED9D3] rounded-none">UTC 00:00</span>
+              </div>
+              <div id="aiHudRpd" class="text-lg font-bold font-display text-[#09293D]">1,500 / 1,500 RPD</div>
+              <div class="w-full bg-[#DED9D3] h-1.5 mt-2 rounded-none overflow-hidden">
+                <div id="aiHudRpdBar" class="bg-[#1C5682] h-1.5 rounded-none transition-all duration-300" style="width: 100%;"></div>
+              </div>
+              <div class="text-[10px] text-[#666D57] pt-1">Daily free-tier cap</div>
+            </div>
+
+            <!-- Card 3: Total Tokens Logged -->
+            <div class="bg-[#F9F8F3] border border-[#DED9D3] rounded-none p-3.5 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#666D57] uppercase tracking-wider">Total Tokens</span>
+                <span class="text-[10px] font-bold text-[#09293D] bg-white px-1.5 py-0.5 border border-[#DED9D3] rounded-none">Table 15</span>
+              </div>
+              <div id="aiHudTokens" class="text-lg font-bold font-display text-[#09293D]">0 tokens</div>
+              <div class="w-full bg-[#DED9D3] h-1.5 mt-2 rounded-none">
+                <div class="bg-[#09293D] h-1.5 rounded-none" style="width: 100%;"></div>
+              </div>
+              <div id="aiHudTokenSub" class="text-[10px] text-[#666D57] pt-1">Across 0 generation calls</div>
+            </div>
+
+            <!-- Card 4: Deduplication & Cache Savings -->
+            <div class="bg-[#F9F8F3] border border-[#DED9D3] rounded-none p-3.5 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#666D57] uppercase tracking-wider">Cache Hit Rate</span>
+                <span class="text-[10px] font-bold text-[#7FBF19] bg-white px-1.5 py-0.5 border border-[#DED9D3] rounded-none">SHA-256</span>
+              </div>
+              <div id="aiHudCache" class="text-lg font-bold font-display text-[#09293D]">0% (0 saved)</div>
+              <div class="w-full bg-[#DED9D3] h-1.5 mt-2 rounded-none">
+                <div class="bg-[#7FBF19] h-1.5 rounded-none" style="width: 100%;"></div>
+              </div>
+              <div class="text-[10px] text-[#7FBF19] font-bold pt-1">Zero token burn on hits</div>
+            </div>
+
+            <!-- Card 5: Financial Cost -->
+            <div class="bg-[#F9F8F3] border border-[#DED9D3] rounded-none p-3.5 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#666D57] uppercase tracking-wider">Estimated Cost</span>
+                <span class="text-[10px] font-bold text-[#7FBF19] bg-white px-1.5 py-0.5 border border-[#DED9D3] rounded-none">100% Free</span>
+              </div>
+              <div id="aiHudCost" class="text-lg font-bold font-display text-[#7FBF19]">$0.00</div>
+              <div class="w-full bg-[#DED9D3] h-1.5 mt-2 rounded-none">
+                <div class="bg-[#7FBF19] h-1.5 rounded-none" style="width: 100%;"></div>
+              </div>
+              <div class="text-[10px] text-[#666D57] pt-1">Google AI Studio Free Tier</div>
+            </div>
+
+          </div>
+
+          <!-- Parameter Configuration Panel -->
+          <div id="aiGenConfigPanel" class="bg-[#F9F8F3] border border-[#DED9D3] rounded-none p-5 space-y-4 font-sans">
+            <div class="flex items-center justify-between border-b border-[#DED9D3] pb-2.5">
+              <h4 class="font-display font-bold text-xs uppercase tracking-wider text-[#09293D] flex items-center gap-2">
+                <span>⚙️ Generation Parameters &amp; Syllabus Taxonomy</span>
+              </h4>
+              <span class="text-[11px] text-[#666D57] font-bold">Class 1 to 10 · Bloom's Taxonomy · CBSE Blueprint</span>
+            </div>
+
+            <!-- Row 1: Grade, Subject, Question Type -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label for="aiGenGrade" class="block font-bold text-[#666D57] text-xs mb-1">Grade / Class *</label>
+                <select id="aiGenGrade" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+                  <option value="Class 1">Class 1</option>
+                  <option value="Class 2">Class 2</option>
+                  <option value="Class 3" selected>Class 3</option>
+                  <option value="Class 4">Class 4</option>
+                  <option value="Class 5">Class 5</option>
+                  <option value="Class 6">Class 6</option>
+                  <option value="Class 7">Class 7</option>
+                  <option value="Class 8">Class 8</option>
+                  <option value="Class 9">Class 9</option>
+                  <option value="Class 10">Class 10</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="aiGenSubject" class="block font-bold text-[#666D57] text-xs mb-1">Subject *</label>
+                <select id="aiGenSubject" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+                  <option value="Mathematics" selected>Mathematics</option>
+                  <option value="Science">Science</option>
+                  <option value="Social Science">Social Science</option>
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="EVS">EVS (Environmental Studies)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="aiGenType" class="block font-bold text-[#666D57] text-xs mb-1">Question Type *</label>
+                <select id="aiGenType" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+                  <option value="MCQ" selected>MCQ (Multiple Choice · 4 Options)</option>
+                  <option value="SHORT_ANSWER">Short Answer (Conceptual / Analytical)</option>
+                  <option value="TRUE_FALSE">True / False Assertion</option>
+                  <option value="FILL_IN_BLANK">Fill in the Blanks</option>
+                  <option value="NUMERICAL">Numerical / Problem Solving</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Row 2: Chapter & Topic -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label for="aiGenChapter" class="block font-bold text-[#666D57] text-xs mb-1">Chapter Name *</label>
+                <input type="text" id="aiGenChapter" value="Fractions and Decimals" placeholder="e.g. Fractions and Decimals" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+              </div>
+
+              <div>
+                <label for="aiGenTopic" class="block font-bold text-[#666D57] text-xs mb-1">Specific Topic / Concept *</label>
+                <input type="text" id="aiGenTopic" value="Equivalent Fractions &amp; Word Problems" placeholder="e.g. Equivalent Fractions &amp; Word Problems" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+              </div>
+            </div>
+
+            <!-- Row 3: Quantity, Difficulty, Model, Target Storage -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label for="aiGenQuantity" class="block font-bold text-[#666D57] text-xs mb-1">Quantity (1 to 20) *</label>
+                <input type="number" id="aiGenQuantity" min="1" max="20" value="5" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+              </div>
+
+              <div>
+                <label for="aiGenDifficulty" class="block font-bold text-[#666D57] text-xs mb-1">Difficulty Level *</label>
+                <select id="aiGenDifficulty" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+                  <option value="Easy">Easy (Foundational)</option>
+                  <option value="Medium" selected>Medium (Standard CBSE)</option>
+                  <option value="Hard">Hard (HOTS / Olympiad)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="aiGenModel" class="block font-bold text-[#666D57] text-xs mb-1">Gemini Model *</label>
+                <select id="aiGenModel" onchange="fetchGeminiQuotaStatus()" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+                  <option value="gemini-1.5-flash" selected>gemini-1.5-flash (Fast &amp; Free)</option>
+                  <option value="gemini-2.0-flash">gemini-2.0-flash (Latest Engine)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="aiGenTargetContentType" class="block font-bold text-[#666D57] text-xs mb-1">Target Storage *</label>
+                <select id="aiGenTargetContentType" class="w-full bg-white border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] text-xs font-bold focus:outline-none focus:border-[#09293D]">
+                  <option value="CurriculumQuizzes" selected>🎯 Table 11 Curriculum Quizzes</option>
+                  <option value="DailyKnowledge">💡 Table 10 Daily Knowledge</option>
+                  <option value="Stories">📖 Table 8 Story Quests</option>
+                  <option value="EQScenarios">🧠 Table 9 EQ Scenarios</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Row 4: Checkbox Options, Countdown Banner, & Submit Button -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-[#DED9D3]">
+              <div class="flex items-center space-x-2">
+                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-[#09293D] select-none">
+                  <input type="checkbox" id="aiGenForceRefresh" class="rounded-none border border-[#DED9D3] text-[#09293D] focus:ring-0">
+                  <span>Force Refresh (Bypass SHA-256 Deduplication Cache)</span>
+                </label>
+              </div>
+
+              <div class="flex items-center gap-3 flex-wrap">
+                <button type="button" id="aiGenSubmitBtn" onclick="handleTriggerGeminiGeneration()" class="px-6 py-2.5 bg-[#F65800] hover:bg-[#F9A66E] text-white font-sans text-xs font-bold uppercase tracking-wider rounded-none transition flex items-center justify-center space-x-2 shadow-none cursor-pointer">
+                  <span id="aiGenBtnText">⚡ Synthesize Curriculum with Gemini</span>
+                  <span id="aiGenLoadingSpinner" class="hidden inline-block animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-none"></span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Status Message & Throttling Banner -->
+            <div id="aiGenStatusMsg" class="hidden text-xs font-bold px-3 py-2 rounded-none border"></div>
+            <div id="aiGenCountdownBanner" class="hidden text-xs font-bold bg-[#D80707]/10 text-[#D80707] border border-[#D80707] px-3 py-2 rounded-none flex items-center gap-2">
+              <span>⏳ Rate Limit Active: Throttling requests. Auto-resuming in <span id="aiGenCountdownTimer" class="font-mono underline">0</span>s.</span>
+            </div>
+
+          </div>
+
+          <!-- Interactive Preview & Inspection Deck -->
+          <div id="aiGenPreviewDeck" class="hidden bg-white border-2 border-[#09293D] rounded-none p-5 space-y-4 font-sans">
+            
+            <!-- Generation Summary Banner -->
+            <div id="aiGenSummaryBanner" class="bg-[#F4F2EA] border-l-4 border-[#09293D] rounded-none p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-[#DED9D3]">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span id="aiGenSummaryStatusBadge" class="px-2.5 py-1 text-xs font-bold rounded-none bg-[#1C5682]/20 text-[#09293D] border border-[#1C5682] flex items-center gap-1">
+                  ✨ Generated via Gemini 1.5 Flash
+                </span>
+                <span class="text-xs text-[#666D57]">|</span>
+                <span class="text-xs text-[#666D57]">Latency: <strong id="aiGenSummaryLatency" class="font-mono text-[#09293D]">0ms</strong></span>
+              </div>
+              
+              <div class="flex items-center gap-3 text-xs text-[#666D57] flex-wrap">
+                <span>Prompt Tokens: <strong id="aiGenSummaryPromptTokens" class="font-mono text-[#09293D]">0</strong></span>
+                <span>•</span>
+                <span>Candidate Tokens: <strong id="aiGenSummaryCandidateTokens" class="font-mono text-[#09293D]">0</strong></span>
+                <span>•</span>
+                <span>Total: <strong id="aiGenSummaryTotalTokens" class="font-mono font-bold text-[#F65800]">0</strong></span>
+              </div>
+            </div>
+
+            <!-- Deck Header & Batch Actions Bar -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#DED9D3] pb-3">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-2">
+                  <h4 class="font-display font-bold text-sm text-[#09293D] uppercase tracking-wider">Interactive Question Inspection Deck</h4>
+                  <span id="aiGenDeckCountBadge" class="px-2 py-0.5 text-[11px] font-bold rounded-none bg-[#09293D] text-white">Showing 0 Items</span>
+                </div>
+                <p class="text-xs text-[#666D57]">Inspect, edit inline, or discard generated items before committing directly to Table 11 storage.</p>
+              </div>
+
+              <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" id="aiGenDiscardBatchBtn" onclick="discardEntireGeneratedBatch()" class="px-3 py-1.5 bg-white hover:bg-[#F9F8F3] text-[#D80707] font-bold text-xs rounded-none border border-[#D80707] transition flex items-center gap-1.5 cursor-pointer">
+                  <span>🗑️ Discard Entire Batch</span>
+                </button>
+                <button type="button" id="aiGenCommitBtn" onclick="handleCommitAiGeneratedToStorage()" class="px-4 py-2 bg-[#F65800] hover:bg-[#F9A66E] text-white font-bold text-xs uppercase tracking-wider rounded-none transition flex items-center gap-1.5 shadow-none cursor-pointer">
+                  <span>🚀 Commit to Storage</span>
+                  <span id="aiGenCommitCountBadge" class="bg-white/20 px-1.5 py-0.5 text-[10px] rounded-none font-mono">0</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Status / Progress alert during commit -->
+            <div id="aiGenCommitStatus" class="hidden text-xs font-bold text-[#1C5682] bg-[#D9E6EB]/40 p-2.5 border border-[#1C5682] rounded-none"></div>
+
+            <!-- Empty state if all items discarded -->
+            <div id="aiGenPreviewEmptyState" class="hidden p-8 text-center text-xs text-[#666D57] font-bold border border-dashed border-[#DED9D3]">
+              No questions currently in inspection deck. Generate a new batch above or reload.
+            </div>
+
+            <!-- Dynamic Question Cards List -->
+            <div id="aiGenQuestionsList" class="space-y-4">
+              <!-- Populated dynamically via renderAiGenPreviewDeck() -->
+            </div>
+
+          </div>
+
         </div>
 
       </div>
@@ -3239,6 +3531,23 @@
       return code;
     }
 
+    function sanitizeSheetCellValue(val) {
+      if (typeof val === "string") {
+        if (val.length > 0 && /^[=+\-@\t\r]/.test(val)) {
+          if (val.charAt(0) !== "'") {
+            return "'" + val;
+          }
+        }
+        const trimmed = val.trim();
+        if (trimmed.length > 0 && /^[=+\-@]/.test(trimmed)) {
+          if (val.charAt(0) !== "'") {
+            return "'" + val;
+          }
+        }
+      }
+      return val;
+    }
+
     // Storage abstraction with localStorage persistence and memory fallback
     const _zoptroStorage = {
       _mem: {},
@@ -3296,6 +3605,7 @@ const BrowserMockBackend = {
     STUDENT_COMPLETIONS: 'zoptro_db_student_completions',
     STUDENT_QUESTION_RESPONSES: 'zoptro_db_student_question_responses',
     STUDENT_GROWTH_PROFILES: 'zoptro_db_student_growth_profiles',
+    GEMINI_TOKEN_LOGS: 'zoptro_db_gemini_token_logs',
     SESSION: 'zoptro_session'
   },
 
@@ -3534,6 +3844,11 @@ const BrowserMockBackend = {
     };
   },
 
+  // Defect fix: alias _assertAdmin to assertAdmin to support bulkUploadContentBatch line 5927
+  _assertAdmin: function(adminUserId) {
+    return this.assertAdmin(adminUserId);
+  },
+
   _assertParent: function(parentUserId) {
     const rawId = String(parentUserId || '');
     const targetId = (rawId === 'u_parent_demo') ? 'u_par_demo' : rawId;
@@ -3637,7 +3952,8 @@ const BrowserMockBackend = {
       this.KEYS.CURRICULUM_QUIZZES,
       this.KEYS.STUDENT_COMPLETIONS,
       this.KEYS.STUDENT_QUESTION_RESPONSES,
-      this.KEYS.STUDENT_GROWTH_PROFILES
+      this.KEYS.STUDENT_GROWTH_PROFILES,
+      this.KEYS.GEMINI_TOKEN_LOGS
     ];
 
     for (let i = 0; i < secondaryKeys.length; i++) {
@@ -3902,6 +4218,7 @@ const BrowserMockBackend = {
     this._setTable(this.KEYS.STUDENT_COMPLETIONS, []);
     this._setTable(this.KEYS.STUDENT_QUESTION_RESPONSES, []);
     this._setTable(this.KEYS.STUDENT_GROWTH_PROFILES, []);
+    this._setTable(this.KEYS.GEMINI_TOKEN_LOGS, []);
 
     this._ensureContentSeeds();
 
@@ -6005,6 +6322,580 @@ const BrowserMockBackend = {
     };
   },
 
+  // =========================================================================
+  // MILESTONE 3: BROWSER MOCK GEMINI PIPELINE & QUOTA CONTROLS
+  // =========================================================================
+
+  /**
+   * Computes canonical 10-tuple SHA-256 fingerprint for deduplication caching.
+   * Joined by double-colon '::' to prevent delimiter collision attacks.
+   * Matches google_apps_script_backend.js byte-for-byte.
+   */
+  computeGeminiCacheFingerprint: function(payload) {
+    const p = payload || {};
+    const model = p.model ? String(p.model).trim() : 'gemini-1.5-flash';
+    const grade = (this._normalizeGrade ? this._normalizeGrade(p.gradeClass || p.grade) : null) || 'Class 3';
+    const subject = p.subject ? String(p.subject).trim() : 'General Science';
+    const chapter = p.chapter ? String(p.chapter).trim() : 'General';
+    const topic = p.topic ? String(p.topic).trim() : 'Core Concepts';
+    const questionType = p.questionType ? String(p.questionType).trim().toUpperCase() : 'MCQ';
+    const quantity = String(Math.min(Math.max(Number(p.quantity) || 5, 1), 20));
+    const difficulty = p.difficulty ? String(p.difficulty).trim() : 'Medium';
+    const bloomLevel = p.bloomLevel ? String(p.bloomLevel).trim() : 'Applying';
+
+    const rawKey = [
+      'gemini',
+      model,
+      grade,
+      subject,
+      chapter,
+      topic,
+      questionType,
+      quantity,
+      difficulty,
+      bloomLevel
+    ].join('::');
+
+    return (typeof _zoptroSha256 === 'function') ? _zoptroSha256(rawKey) : '';
+  },
+
+  computeGeminiRequestFingerprint: function(payload) {
+    return this.computeGeminiCacheFingerprint(payload);
+  },
+
+  /**
+   * Appends metered token consumption record to Table 15 GeminiTokenLogs.
+   */
+  recordGeminiTokenUsageLog: function(logEntry) {
+    const p = logEntry || {};
+    const logs = this._getTable(this.KEYS.GEMINI_TOKEN_LOGS);
+    const now = new Date().toISOString();
+    const logId = p.id || ('tok_' + Date.now() + '_' + Math.floor(Math.random() * 10000));
+
+    const promptTokens = Number(p.promptTokens || 0);
+    const candidateTokens = Number(p.candidateTokens || 0);
+    const totalTokens = Number(p.totalTokens !== undefined ? p.totalTokens : (promptTokens + candidateTokens));
+    const cachedFlag = (p.cachedFlag !== undefined) ? Boolean(p.cachedFlag) : (p.cached !== undefined ? Boolean(p.cached) : Boolean(p.isCached));
+
+    const entry = {
+      id: String(logId),
+      timestamp: p.timestamp ? String(p.timestamp) : now,
+      adminUserId: sanitizeSheetCellValue(p.adminUserId ? String(p.adminUserId) : ''),
+      model: sanitizeSheetCellValue(p.model ? String(p.model) : 'gemini-1.5-flash'),
+      grade: sanitizeSheetCellValue(p.grade ? String(p.grade) : (p.gradeClass ? String(p.gradeClass) : '')),
+      subject: sanitizeSheetCellValue(p.subject ? String(p.subject) : ''),
+      topic: sanitizeSheetCellValue(p.topic ? String(p.topic) : ''),
+      questionType: sanitizeSheetCellValue(p.questionType ? String(p.questionType) : 'MCQ'),
+      quantity: Number(p.quantity || p.itemCount || 0),
+      promptTokens: promptTokens,
+      candidateTokens: candidateTokens,
+      totalTokens: totalTokens,
+      cachedFlag: cachedFlag,
+      status: sanitizeSheetCellValue(p.status ? String(p.status) : 'SUCCESS'),
+      latencyMs: Number(p.latencyMs !== undefined ? p.latencyMs : (p.durationMs !== undefined ? p.durationMs : 0))
+    };
+
+    logs.push(entry);
+    this._setTable(this.KEYS.GEMINI_TOKEN_LOGS, logs);
+    return entry;
+  },
+
+  /**
+   * Sliding-Window Rate Limiter & Daily Quota Guard (15 RPM / 1,500 RPD).
+   */
+  checkAndIncrementRateLimit: function(model, consume) {
+    const selectedModel = model ? String(model).trim() : 'gemini-1.5-flash';
+    const modelSafeKey = selectedModel.replace(/[^a-zA-Z0-9_.-]/g, '_');
+    const shouldConsume = (consume !== false);
+
+    const now = Date.now();
+    const todayUtc = new Date(now).toISOString().substring(0, 10);
+    const rpdKey = 'gemini_rpd_' + modelSafeKey + '_' + todayUtc;
+    const timestampsKey = 'gemini_rpm_timestamps_' + modelSafeKey;
+
+    const rpdLimit = 1500;
+    const rpmLimit = 15;
+    const secondsUntilUtcMidnight = Math.max(1, 86400 - (Math.floor(now / 1000) % 86400));
+
+    let dailyCount = 0;
+    const dailyRaw = _zoptroStorage.getItem(rpdKey);
+    if (dailyRaw !== null && dailyRaw !== undefined && dailyRaw !== '') {
+      dailyCount = parseInt(dailyRaw, 10) || 0;
+    }
+
+    if (dailyCount >= rpdLimit) {
+      return {
+        allowed: false,
+        rpmLimit: rpmLimit,
+        rpmCurrent: 0,
+        rpmRemaining: 0,
+        rpdLimit: rpdLimit,
+        rpdCurrent: dailyCount,
+        dailyRemaining: 0,
+        retryAfterSeconds: secondsUntilUtcMidnight,
+        error: 'DAILY_QUOTA_EXCEEDED: Free tier limit of 1,500 requests per day reached for ' + selectedModel + '. Resets at UTC 00:00:00.'
+      };
+    }
+
+    const timestampsRaw = _zoptroStorage.getItem(timestampsKey);
+    let timestamps = [];
+    if (timestampsRaw) {
+      try {
+        const parsed = JSON.parse(timestampsRaw);
+        if (Array.isArray(parsed)) timestamps = parsed;
+      } catch (e) { timestamps = []; }
+    }
+
+    const windowStart = now - 60000;
+    timestamps = timestamps.filter(function(ts) {
+      return typeof ts === 'number' && !isNaN(ts) && ts > windowStart;
+    });
+    timestamps.sort(function(a, b) { return a - b; });
+
+    if (timestamps.length >= rpmLimit) {
+      const oldestTs = timestamps[0];
+      const retryAfterMs = (oldestTs + 60000) - now;
+      const retryAfterSeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
+      return {
+        allowed: false,
+        rpmLimit: rpmLimit,
+        rpmCurrent: timestamps.length,
+        rpmRemaining: 0,
+        rpdLimit: rpdLimit,
+        rpdCurrent: dailyCount,
+        dailyRemaining: Math.max(0, rpdLimit - dailyCount),
+        retryAfterSeconds: retryAfterSeconds,
+        error: 'RATE_LIMIT_EXCEEDED: Free tier limit of 15 requests per minute reached for ' + selectedModel + '. Please throttle requests.'
+      };
+    }
+
+    if (shouldConsume) {
+      const nextDailyCount = dailyCount + 1;
+      timestamps.push(now);
+      _zoptroStorage.setItem(timestampsKey, JSON.stringify(timestamps));
+      _zoptroStorage.setItem(rpdKey, String(nextDailyCount));
+
+      // Cleanup yesterday's counter on rollover
+      if (dailyCount === 0) {
+        const yesterdayUtc = new Date(now - 86400000).toISOString().substring(0, 10);
+        const yesterdayKey = 'gemini_rpd_' + modelSafeKey + '_' + yesterdayUtc;
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.removeItem(yesterdayKey);
+          }
+          delete _zoptroStorage._mem[yesterdayKey];
+        } catch (delErr) {}
+      }
+
+      return {
+        allowed: true,
+        rpmLimit: rpmLimit,
+        rpmCurrent: timestamps.length,
+        rpmRemaining: Math.max(0, rpmLimit - timestamps.length),
+        rpdLimit: rpdLimit,
+        rpdCurrent: nextDailyCount,
+        dailyRemaining: Math.max(0, rpdLimit - nextDailyCount),
+        retryAfterSeconds: 0
+      };
+    }
+
+    return {
+      allowed: true,
+      rpmLimit: rpmLimit,
+      rpmCurrent: timestamps.length,
+      rpmRemaining: Math.max(0, rpmLimit - timestamps.length),
+      rpdLimit: rpdLimit,
+      rpdCurrent: dailyCount,
+      dailyRemaining: Math.max(0, rpdLimit - dailyCount),
+      retryAfterSeconds: 0
+    };
+  },
+
+  /**
+   * Internal Realistic Pedagogical Question Synthesizer for CBSE/NCERT.
+   */
+  _synthesizeCurriculumQuestions: function(params) {
+    const p = params || {};
+    const grade = (this._normalizeGrade ? this._normalizeGrade(p.gradeClass || p.grade) : null) || 'Class 3';
+    const subject = p.subject ? String(p.subject).trim() : 'General Science';
+    const chapter = p.chapter ? String(p.chapter).trim() : 'General';
+    const topic = p.topic ? String(p.topic).trim() : 'Core Concepts';
+    const qType = p.questionType ? String(p.questionType).trim().toUpperCase() : 'MCQ';
+    const quantity = Math.min(Math.max(Number(p.quantity) || 5, 1), 20);
+    const difficulty = p.difficulty ? String(p.difficulty).trim() : 'Medium';
+    const bloom = p.bloomLevel ? String(p.bloomLevel).trim() : 'Applying';
+
+    const items = [];
+    const subjLower = subject.toLowerCase();
+
+    for (let i = 0; i < quantity; i++) {
+      const qNum = i + 1;
+      let title = chapter + ' - ' + topic + ' (Q' + qNum + ')';
+      let questionText = '';
+      let options = [];
+      let correctIdx = i % 4;
+      let hint = '';
+      let explanation = '';
+
+      if (qType === 'TRUE_FALSE') {
+        options = ['True', 'False', 'Partially True', 'Cannot be Determined'];
+        correctIdx = (i % 2 === 0) ? 0 : 1;
+        const isTrue = (correctIdx === 0);
+        questionText = 'Assertion: In ' + grade + ' ' + subject + ', under ' + chapter + ', the core principle of ' + topic + ' is essential for standard system balance.';
+        hint = 'Consider the primary definition and conditions of ' + topic + '.';
+        explanation = (isTrue ? 'The assertion is valid because ' : 'The assertion is invalid because ') + topic + ' directly aligns with ' + chapter + ' principles in ' + subject + '.';
+      } else if (qType === 'FILL_IN_BLANK') {
+        questionText = 'In ' + subject + ' (' + chapter + '), the key property that governs ' + topic + ' is known as _______.';
+        options = [topic + ' Core Principle', 'Auxiliary Measurement', 'Equilibrium Constant', 'Standard Variance'];
+        const tmp = options[0];
+        options[0] = options[correctIdx];
+        options[correctIdx] = tmp;
+        hint = 'Identify the primary term directly associated with ' + topic + '.';
+        explanation = 'The correct term is ' + options[correctIdx] + ', which fundamentally defines ' + topic + ' in ' + chapter + '.';
+      } else if (qType === 'NUMERICAL') {
+        const val1 = (i + 2) * 4;
+        const val2 = (i + 1) * 3;
+        const ans = val1 + val2;
+        questionText = 'Calculate the resulting quantitative value in ' + topic + ' (' + chapter + ') when component A equals ' + val1 + ' and component B equals ' + val2 + '.';
+        const optSet = [String(ans), String(ans - 4), String(ans + 5), String(val1 * 2)];
+        const tmp = optSet[0];
+        optSet[0] = optSet[correctIdx];
+        optSet[correctIdx] = tmp;
+        options = optSet;
+        hint = 'Sum the two components together: ' + val1 + ' + ' + val2 + '.';
+        explanation = 'Calculation: ' + val1 + ' + ' + val2 + ' = ' + ans + '. Option ' + String.fromCharCode(65 + correctIdx) + ' is the correct quantitative solution.';
+      } else if (qType === 'SHORT_ANSWER') {
+        questionText = 'What is the primary role of ' + topic + ' within the study of ' + chapter + ' (' + subject + ')?';
+        const answers = [
+          'It provides the structural and conceptual basis for analyzing ' + chapter + '.',
+          'It merely serves as an auxiliary measurement without functional impact.',
+          'It is strictly limited to historical classifications and lacks modern relevance.',
+          'It contradicts standard observational models in ' + subject + '.'
+        ];
+        const tmp = answers[0];
+        answers[0] = answers[correctIdx];
+        answers[correctIdx] = tmp;
+        options = answers;
+        hint = 'Focus on the foundational function of ' + topic + '.';
+        explanation = 'In ' + subject + ', ' + topic + ' provides the essential foundational framework for understanding ' + chapter + '.';
+      } else {
+        // Standard MCQ with domain-specific pedagogical modeling
+        if (subjLower.includes('math')) {
+          const mFactor = (i + 2);
+          questionText = 'In ' + grade + ' Mathematics (' + chapter + '), which statement represents the canonical application of ' + topic + ' with factor ' + mFactor + '?';
+          options = [
+            'It preserves invariant proportional ratios across ' + topic + ' transformations.',
+            'It arbitrarily alters denominators without mathematical justification.',
+            'It inverts positive and negative parity indiscriminately.',
+            'It applies only to irrational numbers under non-Euclidean geometries.'
+          ];
+          hint = 'Recall standard operations and proportional invariance in ' + chapter + '.';
+          explanation = 'In ' + grade + ' Mathematics, ' + topic + ' preserves essential proportional invariants during algebraic/arithmetic operations.';
+        } else if (subjLower.includes('sci')) {
+          questionText = 'Which experimental observation best validates the mechanism of ' + topic + ' in ' + grade + ' Science (' + chapter + ')?';
+          options = [
+            'A verifiable, repeatable interaction that confirms the principles of ' + topic + '.',
+            'A random thermal fluctuation with no causal correlation to ' + chapter + '.',
+            'A spontaneous violation of conservation laws under ambient laboratory pressure.',
+            'An instantaneous reaction that entirely bypasses intermediate thermodynamic states.'
+          ];
+          hint = 'Think about empirical verification and repeatable scientific evidence in ' + chapter + '.';
+          explanation = 'Scientific inquiry in ' + grade + ' Science confirms ' + topic + ' through repeatable, verifiable observations consistent with ' + chapter + '.';
+        } else if (subjLower.includes('social') || subjLower.includes('hist') || subjLower.includes('geo') || subjLower.includes('civic')) {
+          questionText = 'What is the institutional or societal significance of ' + topic + ' as outlined in ' + grade + ' Social Science (' + chapter + ')?';
+          options = [
+            'It establishes structural frameworks that guide collective governance and civic balance.',
+            'It operates in total isolation from economic, social, or geographic realities.',
+            'It represents a purely nominal classification with zero historical consequences.',
+            'It was abolished prior to the drafting of modern constitutional guidelines.'
+          ];
+          hint = 'Consider the civic and historical role played by ' + topic + ' in ' + chapter + '.';
+          explanation = 'According to the NCERT curriculum, ' + topic + ' forms a crucial pillar of institutional and societal structure in ' + chapter + '.';
+        } else if (subjLower.includes('eng')) {
+          questionText = 'Which grammatical construction or literary convention accurately illustrates ' + topic + ' in ' + grade + ' English (' + chapter + ')?';
+          options = [
+            'The standardized syntactical form that aligns with formal NCERT conventions for ' + topic + '.',
+            'An ungrammatical fragment exhibiting tense disagreement and misplaced modifiers.',
+            'A double negative structure that reverses intended rhetorical meaning.',
+            'An archaic idiom that violates standard English subject-verb agreement.'
+          ];
+          hint = 'Look for formal grammatical agreement and standard structural syntax.';
+          explanation = 'In standard English pedagogy, ' + topic + ' adheres to formal structural syntax and coherent contextual usage.';
+        } else {
+          questionText = 'Which statement most accurately characterizes ' + topic + ' in ' + grade + ' ' + subject + ' (' + chapter + ')?';
+          options = [
+            'It represents the canonical mechanism by which ' + topic + ' operates in ' + chapter + '.',
+            'It operates independently without interacting with any other component in ' + chapter + '.',
+            'It is an outdated convention that has been completely replaced in modern NCERT frameworks.',
+            'It only applies under extreme theoretical conditions and never in practical scenarios.'
+          ];
+          hint = 'Recall the foundational definition taught in ' + grade + ' ' + subject + '.';
+          explanation = 'Option ' + String.fromCharCode(65 + correctIdx) + ' accurately describes ' + topic + ' according to CBSE/NCERT standards for ' + grade + '.';
+        }
+
+        const tmp = options[0];
+        options[0] = options[correctIdx];
+        options[correctIdx] = tmp;
+      }
+
+      // Distractor integrity: enforce exactly 4 options
+      while (options.length < 4) {
+        options.push('Option ' + String.fromCharCode(65 + options.length));
+      }
+      if (options.length > 4) {
+        options = options.slice(0, 4);
+      }
+      if (correctIdx < 0 || correctIdx >= options.length) correctIdx = 0;
+
+      items.push({
+        id: 'curr_' + Date.now() + '_' + qNum,
+        grade: grade,
+        subject: subject,
+        chapter: chapter,
+        topic: topic,
+        title: sanitizeSheetCellValue(title),
+        questionText: sanitizeSheetCellValue(questionText),
+        options: options.map(sanitizeSheetCellValue),
+        optionsJson: JSON.stringify(options.map(sanitizeSheetCellValue)),
+        correctOptionIndex: correctIdx,
+        hint: sanitizeSheetCellValue(hint),
+        explanation: sanitizeSheetCellValue(explanation),
+        bloomLevel: bloom,
+        difficulty: difficulty,
+        examCategory: 'CBSE'
+      });
+    }
+
+    return items;
+  },
+
+  /**
+   * Main Generator: generateCurriculumQuestionsWithGemini
+   * Full functional parity with google_apps_script_backend.js.
+   */
+  generateCurriculumQuestionsWithGemini: function(payload) {
+    const p = payload || {};
+    const adminUserId = p.adminUserId ? String(p.adminUserId).trim() : '';
+
+    // 1. RBAC Validation
+    const adminCheck = this.assertAdmin(adminUserId);
+    if (!adminCheck || !adminCheck.success) {
+      return adminCheck || { success: false, error: 'UNAUTHORIZED: Admin privileges required.', code: 403 };
+    }
+
+    const model = p.model ? String(p.model).trim() : 'gemini-1.5-flash';
+    const gradeClass = (this._normalizeGrade ? this._normalizeGrade(p.gradeClass || p.grade) : null) || 'Class 3';
+    const subject = p.subject ? String(p.subject).trim() : 'General Science';
+    const chapter = p.chapter ? String(p.chapter).trim() : 'General';
+    const topic = p.topic ? String(p.topic).trim() : 'Core Concepts';
+    const questionType = p.questionType ? String(p.questionType).trim().toUpperCase() : 'MCQ';
+    const quantity = Math.min(Math.max(Number(p.quantity) || 5, 1), 20);
+    const difficulty = p.difficulty ? String(p.difficulty).trim() : 'Medium';
+    const bloomLevel = p.bloomLevel ? String(p.bloomLevel).trim() : 'Applying';
+
+    // 2. Canonical Deduplication Cache Check
+    const fingerprint = this.computeGeminiCacheFingerprint(p);
+    const cacheKey = 'gemini_cache_' + fingerprint;
+
+    if (!p.forceRefresh) {
+      const rawCache = _zoptroStorage.getItem(cacheKey);
+      if (rawCache) {
+        try {
+          const cachedData = JSON.parse(rawCache);
+          if (cachedData && Array.isArray(cachedData.items) && cachedData.items.length > 0) {
+            // Increment persistent cache hit counter
+            const currentHits = parseInt(_zoptroStorage.getItem('gemini_cache_hits_count') || '0', 10);
+            _zoptroStorage.setItem('gemini_cache_hits_count', String(currentHits + 1));
+
+            // Record 0-token hit in Table 15 GeminiTokenLogs
+            this.recordGeminiTokenUsageLog({
+              adminUserId: adminUserId,
+              model: cachedData.model || model,
+              grade: gradeClass,
+              subject: subject,
+              topic: topic,
+              questionType: questionType,
+              quantity: cachedData.items.length,
+              promptTokens: 0,
+              candidateTokens: 0,
+              totalTokens: 0,
+              cachedFlag: true,
+              status: 'SUCCESS',
+              latencyMs: 5
+            });
+
+            const rateStatus = this.checkAndIncrementRateLimit(model, false);
+            return {
+              success: true,
+              cached: true,
+              items: cachedData.items,
+              tokenUsage: {
+                promptTokens: 0,
+                candidateTokens: 0,
+                totalTokens: 0,
+                estimatedCostUsd: 0.0000
+              },
+              rateLimits: {
+                rpmRemaining: rateStatus.rpmRemaining,
+                dailyRemaining: rateStatus.dailyRemaining,
+                retryAfterSeconds: rateStatus.retryAfterSeconds || 0
+              }
+            };
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 3. Sliding-Window Rate Limiting (15 RPM / 1,500 RPD) - Consumes 1 slot
+    const rateLimitDecision = this.checkAndIncrementRateLimit(model, true);
+    if (!rateLimitDecision.allowed) {
+      this.recordGeminiTokenUsageLog({
+        adminUserId: adminUserId,
+        model: model,
+        grade: gradeClass,
+        subject: subject,
+        topic: topic,
+        questionType: questionType,
+        quantity: quantity,
+        promptTokens: 0,
+        candidateTokens: 0,
+        totalTokens: 0,
+        cachedFlag: false,
+        status: 'RATE_LIMITED',
+        latencyMs: 0
+      });
+
+      return {
+        success: false,
+        error: rateLimitDecision.error,
+        code: 429,
+        rateLimits: {
+          rpmRemaining: rateLimitDecision.rpmRemaining,
+          dailyRemaining: rateLimitDecision.dailyRemaining,
+          retryAfterSeconds: rateLimitDecision.retryAfterSeconds
+        }
+      };
+    }
+
+    // 4. Synthesize Realistic CBSE Assessment Items
+    const normalizedItems = this._synthesizeCurriculumQuestions(p);
+
+    // 5. Realistic Token Metering
+    const promptTokens = 420 + Math.floor((subject.length + chapter.length + topic.length) * 2.5);
+    const candidateTokens = quantity * 120;
+    const totalTokens = promptTokens + candidateTokens;
+
+    // 6. Commit to LocalStorage Cache
+    _zoptroStorage.setItem(cacheKey, JSON.stringify({
+      fingerprint: fingerprint,
+      timestamp: Date.now(),
+      items: normalizedItems,
+      model: model,
+      promptTokens: promptTokens,
+      candidateTokens: candidateTokens,
+      totalTokens: totalTokens
+    }));
+
+    // 7. Record Metered Log in Table 15 GeminiTokenLogs
+    this.recordGeminiTokenUsageLog({
+      adminUserId: adminUserId,
+      model: model,
+      grade: gradeClass,
+      subject: subject,
+      topic: topic,
+      questionType: questionType,
+      quantity: normalizedItems.length,
+      promptTokens: promptTokens,
+      candidateTokens: candidateTokens,
+      totalTokens: totalTokens,
+      cachedFlag: false,
+      status: 'SUCCESS',
+      latencyMs: 15
+    });
+
+    // 8. Optional Storage Bridge via bulkUploadContentBatch
+    let bulkUploadResult = null;
+    if (p.autoCommit === true || p.commitToStorage === true) {
+      bulkUploadResult = this.bulkUploadContentBatch({
+        adminUserId: adminUserId,
+        contentType: 'CurriculumQuizzes',
+        items: normalizedItems
+      });
+    }
+
+    const res = {
+      success: true,
+      cached: false,
+      items: normalizedItems,
+      tokenUsage: {
+        promptTokens: promptTokens,
+        candidateTokens: candidateTokens,
+        totalTokens: totalTokens,
+        estimatedCostUsd: 0.0000
+      },
+      rateLimits: {
+        rpmRemaining: rateLimitDecision.rpmRemaining,
+        dailyRemaining: rateLimitDecision.dailyRemaining,
+        retryAfterSeconds: rateLimitDecision.retryAfterSeconds || 0
+      }
+    };
+    if (bulkUploadResult) res.bulkUploadResult = bulkUploadResult;
+    return res;
+  },
+
+  /**
+   * Interface Contract 2: Inspects current Gemini API quota telemetry,
+   * rate limit window counters (RPM/RPD), cumulative token consumption,
+   * and cache hit statistics from localStorage logs.
+   */
+  getGeminiQuotaStatus: function(payload) {
+    const p = payload || {};
+    const adminUserId = p.adminUserId ? String(p.adminUserId).trim() : '';
+    const adminCheck = this.assertAdmin(adminUserId);
+    if (!adminCheck || !adminCheck.success) {
+      return adminCheck || { success: false, error: 'UNAUTHORIZED: Admin privileges required.', code: 403 };
+    }
+
+    const model = p.model ? String(p.model).trim() : 'gemini-1.5-flash';
+    const rateDecision = this.checkAndIncrementRateLimit(model, false);
+
+    let totalTokensLogged = 0;
+    let totalCallsLogged = 0;
+    let cacheHitCount = 0;
+
+    const logs = this._getTable(this.KEYS.GEMINI_TOKEN_LOGS);
+    if (Array.isArray(logs)) {
+      totalCallsLogged = logs.length;
+      for (let i = 0; i < logs.length; i++) {
+        const row = logs[i];
+        totalTokensLogged += Number(row.totalTokens || 0);
+        const isCached = (row.cachedFlag === true || String(row.cachedFlag).toLowerCase() === 'true') &&
+                         String(row.status || '').toUpperCase() === 'SUCCESS';
+        if (isCached) cacheHitCount++;
+      }
+    }
+
+    // Auxiliary check for storage cache hits counter
+    try {
+      const storedHits = _zoptroStorage.getItem('gemini_cache_hits_count');
+      if (storedHits) cacheHitCount = Math.max(cacheHitCount, parseInt(storedHits, 10) || 0);
+    } catch (e) {}
+
+    return {
+      success: true,
+      model: model,
+      rpmLimit: rateDecision.rpmLimit || 15,
+      rpmCurrent: rateDecision.rpmCurrent || 0,
+      rpmRemaining: rateDecision.rpmRemaining,
+      rpdLimit: rateDecision.rpdLimit || 1500,
+      rpdCurrent: rateDecision.rpdCurrent || 0,
+      rpdRemaining: rateDecision.dailyRemaining,
+      totalTokensLogged: totalTokensLogged,
+      totalCallsLogged: totalCallsLogged,
+      cacheHitCount: cacheHitCount
+    };
+  },
+
   getCommanderData: function(payload) {
     const studentId = payload && payload.studentId ? String(payload.studentId) : 'u_stu_demo';
     const users = this._getTable(this.KEYS.USERS);
@@ -6206,6 +7097,17 @@ const ZoptroApiClient = {
   getNextPersonalizedCurriculum: function(payload) { return this.call('getNextPersonalizedCurriculum', payload); },
   bulkUploadContentBatch: function(payload) { return this.call('bulkUploadContentBatch', payload); },
 
+  // Milestone 3 Gemini Content Generation & Quota APIs
+  generateCurriculumQuestionsWithGemini: function(payload) {
+    return this.call('generateCurriculumQuestionsWithGemini', payload);
+  },
+  getGeminiQuotaStatus: function(payload) {
+    return this.call('getGeminiQuotaStatus', payload);
+  },
+  apiCall: function(methodName, payload) {
+    return this.call(methodName, payload);
+  },
+
   // Legacy API wrappers
   getCommanderData: function(payload) { return this.call('getCommanderData', payload); },
   updateWalletCoins: function(dCoins, dXp, reason, type, status, parentUserId, studentId) {
@@ -6250,6 +7152,9 @@ const ZoptroApiClient = {
     if (typeof window !== 'undefined') {
       window.BrowserMockBackend = BrowserMockBackend;
       window.ZoptroApiClient = ZoptroApiClient;
+      window.apiCall = function(methodName, payload) {
+        return ZoptroApiClient.call(methodName, payload);
+      };
     }
 
     // ==========================================
@@ -9753,14 +10658,16 @@ const ZoptroApiClient = {
         userBadge.innerText = (currentUser.fullName || 'Super Admin') + ' (' + currentUser.id + ')';
       }
 
-      const tabs = ['stories', 'eq_scenarios', 'daily_knowledge', 'curriculum_quizzes', 'habits_quests'];
+      const tabs = ['stories', 'eq_scenarios', 'daily_knowledge', 'curriculum_quizzes', 'habits_quests', 'bulk_upload', 'ai_generate'];
       tabs.forEach(function(tab) {
         const idMap = {
           stories: 'adminTabBtnStories',
           eq_scenarios: 'adminTabBtnEq',
           daily_knowledge: 'adminTabBtnDailyGk',
           curriculum_quizzes: 'adminTabBtnQuizzes',
-          habits_quests: 'adminTabBtnQuests'
+          habits_quests: 'adminTabBtnQuests',
+          bulk_upload: 'adminTabBtnBulk',
+          ai_generate: 'adminTabBtnAiGenerate'
         };
         const btn = document.getElementById(idMap[tab]);
         if (btn) {
@@ -9772,13 +10679,41 @@ const ZoptroApiClient = {
         }
       });
 
-      fetchAdminContentList();
+      const aiContainer = document.getElementById('adminAiGenerateContainer');
+      const bulkContainer = document.getElementById('adminBulkUploadContainer');
+      const table = document.getElementById('adminContentTable');
+      const empty = document.getElementById('adminEmptyState');
+      const spinner = document.getElementById('adminLoadingSpinner');
+      const searchInput = document.getElementById('adminSearchInput');
+      const searchBox = (searchInput && typeof searchInput.closest === 'function') ? searchInput.closest('.bg-white') : null;
+
+      if (currentAdminTab === 'ai_generate') {
+        if (aiContainer) aiContainer.classList.remove('hidden');
+        if (bulkContainer) bulkContainer.classList.add('hidden');
+        if (table) table.classList.add('hidden');
+        if (empty) empty.classList.add('hidden');
+        if (spinner) spinner.classList.add('hidden');
+        if (searchBox) searchBox.classList.add('hidden');
+        fetchGeminiQuotaStatus();
+      } else if (currentAdminTab === 'bulk_upload') {
+        if (aiContainer) aiContainer.classList.add('hidden');
+        if (bulkContainer) bulkContainer.classList.remove('hidden');
+        if (table) table.classList.add('hidden');
+        if (empty) empty.classList.add('hidden');
+        if (spinner) spinner.classList.add('hidden');
+        if (searchBox) searchBox.classList.add('hidden');
+      } else {
+        if (aiContainer) aiContainer.classList.add('hidden');
+        if (bulkContainer) bulkContainer.classList.add('hidden');
+        if (searchBox) searchBox.classList.remove('hidden');
+        fetchAdminContentList();
+      }
     }
 
     function switchAdminTab(tab) {
       playSound('coin');
       currentAdminTab = tab;
-      const tabs = ['stories', 'eq_scenarios', 'daily_knowledge', 'curriculum_quizzes', 'habits_quests', 'bulk_upload'];
+      const tabs = ['stories', 'eq_scenarios', 'daily_knowledge', 'curriculum_quizzes', 'habits_quests', 'bulk_upload', 'ai_generate'];
       tabs.forEach(function(t) {
         const idMap = {
           stories: 'adminTabBtnStories',
@@ -9786,7 +10721,8 @@ const ZoptroApiClient = {
           daily_knowledge: 'adminTabBtnDailyGk',
           curriculum_quizzes: 'adminTabBtnQuizzes',
           habits_quests: 'adminTabBtnQuests',
-          bulk_upload: 'adminTabBtnBulk'
+          bulk_upload: 'adminTabBtnBulk',
+          ai_generate: 'adminTabBtnAiGenerate'
         };
         const btn = document.getElementById(idMap[t]);
         if (btn) {
@@ -9798,23 +10734,626 @@ const ZoptroApiClient = {
         }
       });
 
+      const aiContainer = document.getElementById('adminAiGenerateContainer');
       const bulkContainer = document.getElementById('adminBulkUploadContainer');
       const table = document.getElementById('adminContentTable');
       const empty = document.getElementById('adminEmptyState');
       const spinner = document.getElementById('adminLoadingSpinner');
-      const searchBox = document.getElementById('adminSearchInput') ? document.getElementById('adminSearchInput').closest('.bg-white') : null;
+      const searchInput = document.getElementById('adminSearchInput');
+      const searchBox = (searchInput && typeof searchInput.closest === 'function') ? searchInput.closest('.bg-white') : null;
 
-      if (tab === 'bulk_upload') {
+      if (tab === 'ai_generate') {
+        if (aiContainer) aiContainer.classList.remove('hidden');
+        if (bulkContainer) bulkContainer.classList.add('hidden');
+        if (table) table.classList.add('hidden');
+        if (empty) empty.classList.add('hidden');
+        if (spinner) spinner.classList.add('hidden');
+        if (searchBox) searchBox.classList.add('hidden');
+        fetchGeminiQuotaStatus();
+      } else if (tab === 'bulk_upload') {
+        if (aiContainer) aiContainer.classList.add('hidden');
         if (bulkContainer) bulkContainer.classList.remove('hidden');
         if (table) table.classList.add('hidden');
         if (empty) empty.classList.add('hidden');
         if (spinner) spinner.classList.add('hidden');
         if (searchBox) searchBox.classList.add('hidden');
       } else {
+        if (aiContainer) aiContainer.classList.add('hidden');
         if (bulkContainer) bulkContainer.classList.add('hidden');
         if (searchBox) searchBox.classList.remove('hidden');
         fetchAdminContentList();
       }
+    }
+
+    // =========================================================================
+    // MILESTONE 3: GEMINI AI CONTENT STUDIO, QUOTA HUD & PREVIEW CONTROLLER
+    // =========================================================================
+
+    var geminiCountdownInterval = null;
+    var currentGeneratedBatch = [];
+    var currentGenerationMetadata = null;
+
+    /**
+     * Render real-time quota telemetry and meter status cards.
+     */
+    function renderGeminiQuotaHud(quotaData) {
+      if (!quotaData) return;
+
+      const rpmEl = document.getElementById('aiHudRpm');
+      const rpmBar = document.getElementById('aiHudRpmBar');
+      const rpdEl = document.getElementById('aiHudRpd');
+      const rpdBar = document.getElementById('aiHudRpdBar');
+      const tokensEl = document.getElementById('aiHudTokens');
+      const tokenSubEl = document.getElementById('aiHudTokenSub');
+      const cacheEl = document.getElementById('aiHudCache');
+      const costEl = document.getElementById('aiHudCost');
+
+      const rpmLimit = quotaData.rpmLimit || 15;
+      const rpmRemaining = quotaData.rpmRemaining !== undefined ? quotaData.rpmRemaining : 15;
+      const rpdLimit = quotaData.rpdLimit || 1500;
+      const rpdRemaining = quotaData.rpdRemaining !== undefined ? quotaData.rpdRemaining : 1500;
+      const totalTokens = quotaData.totalTokensLogged || 0;
+      const totalCalls = quotaData.totalCallsLogged || 0;
+      const cacheHits = quotaData.cacheHitCount || 0;
+
+      // 1. RPM Remaining Card
+      if (rpmEl) {
+        rpmEl.innerText = `${rpmRemaining} / ${rpmLimit} RPM`;
+        if (rpmRemaining <= 0) {
+          rpmEl.className = "text-lg font-bold font-display text-[#D80707]";
+        } else if (rpmRemaining <= 3) {
+          rpmEl.className = "text-lg font-bold font-display text-[#F65800]";
+        } else {
+          rpmEl.className = "text-lg font-bold font-display text-[#09293D]";
+        }
+      }
+      if (rpmBar) {
+        const pct = Math.max(0, Math.min(100, Math.round((rpmRemaining / rpmLimit) * 100)));
+        rpmBar.style.width = pct + '%';
+        rpmBar.className = pct < 20 ? "bg-[#D80707] h-1.5 rounded-none" : (pct < 50 ? "bg-[#F65800] h-1.5 rounded-none" : "bg-[#7FBF19] h-1.5 rounded-none");
+      }
+
+      // 2. Daily Quota Remaining Card
+      if (rpdEl) {
+        rpdEl.innerText = `${rpdRemaining.toLocaleString()} / ${rpdLimit.toLocaleString()} RPD`;
+      }
+      if (rpdBar) {
+        const rpdPct = Math.max(0, Math.min(100, Math.round((rpdRemaining / rpdLimit) * 100)));
+        rpdBar.style.width = rpdPct + '%';
+        rpdBar.className = rpdPct < 10 ? "bg-[#D80707] h-1.5 rounded-none" : "bg-[#1C5682] h-1.5 rounded-none";
+      }
+
+      // 3. Cumulative Tokens Card
+      if (tokensEl) {
+        tokensEl.innerText = `${totalTokens.toLocaleString()} tokens`;
+      }
+      if (tokenSubEl) {
+        tokenSubEl.innerText = `Across ${totalCalls} generation calls`;
+      }
+
+      // 4. Cache Savings Card
+      if (cacheEl) {
+        const hitPct = totalCalls > 0 ? Math.round((cacheHits / totalCalls) * 100) : 0;
+        cacheEl.innerText = `${hitPct}% (${cacheHits} saved)`;
+      }
+
+      // 5. Financial Cost Card
+      if (costEl) {
+        costEl.innerText = "$0.00";
+      }
+    }
+
+    /**
+     * Fetch and refresh live quota status from ZoptroApiClient
+     */
+    function fetchGeminiQuotaStatus() {
+      const adminId = (currentUser && currentUser.id) ? currentUser.id : 'u_adm_demo';
+      const modelSelect = document.getElementById('aiGenModel');
+      const model = modelSelect ? modelSelect.value : 'gemini-1.5-flash';
+
+      if (!window.ZoptroApiClient || typeof ZoptroApiClient.getGeminiQuotaStatus !== 'function') {
+        return;
+      }
+
+      ZoptroApiClient.getGeminiQuotaStatus({
+        adminUserId: adminId,
+        model: model
+      }).then(function(res) {
+        if (res && res.success) {
+          renderGeminiQuotaHud(res);
+        }
+      }).catch(function(err) {
+        console.warn("Failed to fetch Gemini quota status:", err);
+      });
+    }
+
+    /**
+     * Handle submission of curriculum generation request
+     */
+    function handleTriggerGeminiGeneration() {
+      const grade = document.getElementById('aiGenGrade').value;
+      const subject = document.getElementById('aiGenSubject').value;
+      const chapter = document.getElementById('aiGenChapter').value.trim();
+      const topic = document.getElementById('aiGenTopic').value.trim();
+      const questionType = document.getElementById('aiGenType').value;
+      const quantity = parseInt(document.getElementById('aiGenQuantity').value, 10) || 5;
+      const difficulty = document.getElementById('aiGenDifficulty').value;
+      const model = document.getElementById('aiGenModel').value;
+      const targetContentType = document.getElementById('aiGenTargetContentType') ? document.getElementById('aiGenTargetContentType').value : 'CurriculumQuizzes';
+      const forceRefresh = document.getElementById('aiGenForceRefresh').checked;
+
+      const btn = document.getElementById('aiGenSubmitBtn');
+      const btnText = document.getElementById('aiGenBtnText');
+      const spinner = document.getElementById('aiGenLoadingSpinner');
+      const statusMsg = document.getElementById('aiGenStatusMsg');
+      const countdownBanner = document.getElementById('aiGenCountdownBanner');
+
+      // Input validation
+      if (!chapter) {
+        showAiGenStatus("Please specify a Chapter name before generating.", "error");
+        document.getElementById('aiGenChapter').focus();
+        return;
+      }
+      if (!topic) {
+        showAiGenStatus("Please specify a Topic or Concept before generating.", "error");
+        document.getElementById('aiGenTopic').focus();
+        return;
+      }
+
+      // Set loading state
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.innerText = "Synthesizing with Gemini...";
+      if (spinner) spinner.classList.remove('hidden');
+      if (statusMsg) statusMsg.classList.add('hidden');
+      if (countdownBanner) countdownBanner.classList.add('hidden');
+
+      const adminId = (currentUser && currentUser.id) ? currentUser.id : 'u_adm_demo';
+
+      const payload = {
+        adminUserId: adminId,
+        gradeClass: grade,
+        subject: subject,
+        chapter: chapter,
+        topic: topic,
+        questionType: questionType,
+        quantity: quantity,
+        difficulty: difficulty,
+        targetContentType: targetContentType,
+        forceRefresh: forceRefresh,
+        model: model
+      };
+
+      ZoptroApiClient.generateCurriculumQuestionsWithGemini(payload).then(function(res) {
+        resetAiGenButtonState();
+
+        if (res && res.success) {
+          playSound('achievement');
+          const cacheNote = res.cached ? " (⚡ Cached - 0 tokens burned)" : ` (${res.tokenUsage ? res.tokenUsage.totalTokens : 0} tokens consumed)`;
+          showAiGenStatus(`Success: Synthesized ${res.items ? res.items.length : 0} questions for ${grade} ${subject}${cacheNote}.`, "success");
+          
+          fetchGeminiQuotaStatus();
+          handleGeminiGenerationSuccess(res, payload);
+        } else {
+          playSound('wrong');
+          const errorMsg = (res && res.error) ? res.error : "Unknown generation failure.";
+          
+          if (res && (res.code === 429 || (res.rateLimits && res.rateLimits.retryAfterSeconds > 0))) {
+            const retrySec = (res.rateLimits && res.rateLimits.retryAfterSeconds) || 60;
+            startRateLimitCountdown(retrySec);
+          } else {
+            showAiGenStatus(`Generation Failed: ${errorMsg}`, "error");
+          }
+        }
+      }).catch(function(err) {
+        resetAiGenButtonState();
+        playSound('wrong');
+        showAiGenStatus(`API Connection Error: ${err.message}`, "error");
+      });
+    }
+
+    function startRateLimitCountdown(seconds) {
+      const countdownBanner = document.getElementById('aiGenCountdownBanner');
+      const countdownTimer = document.getElementById('aiGenCountdownTimer');
+      const btn = document.getElementById('aiGenSubmitBtn');
+      
+      if (geminiCountdownInterval) clearInterval(geminiCountdownInterval);
+      
+      let remaining = seconds;
+      if (countdownBanner) countdownBanner.classList.remove('hidden');
+      if (countdownTimer) countdownTimer.innerText = remaining;
+      if (btn) btn.disabled = true;
+
+      geminiCountdownInterval = setInterval(function() {
+        remaining--;
+        if (countdownTimer) countdownTimer.innerText = remaining;
+        if (remaining <= 0) {
+          clearInterval(geminiCountdownInterval);
+          geminiCountdownInterval = null;
+          if (countdownBanner) countdownBanner.classList.add('hidden');
+          if (btn) btn.disabled = false;
+          fetchGeminiQuotaStatus();
+        }
+      }, 1000);
+    }
+
+    function resetAiGenButtonState() {
+      const btn = document.getElementById('aiGenSubmitBtn');
+      const btnText = document.getElementById('aiGenBtnText');
+      const spinner = document.getElementById('aiGenLoadingSpinner');
+      if (btn) btn.disabled = false;
+      if (btnText) btnText.innerText = "⚡ Synthesize Curriculum with Gemini";
+      if (spinner) spinner.classList.add('hidden');
+    }
+
+    function showAiGenStatus(msg, type) {
+      const el = document.getElementById('aiGenStatusMsg');
+      if (!el) return;
+      el.innerText = msg;
+      el.classList.remove('hidden');
+      if (type === 'success') {
+        el.className = "text-xs font-bold px-3 py-2 rounded-none bg-[#7FBF19]/20 text-[#09293D] border border-[#7FBF19]";
+      } else if (type === 'error') {
+        el.className = "text-xs font-bold px-3 py-2 rounded-none bg-[#D80707]/10 text-[#D80707] border border-[#D80707]";
+      } else {
+        el.className = "text-xs font-bold px-3 py-2 rounded-none bg-[#F4F2EA] text-[#09293D] border border-[#DED9D3]";
+      }
+    }
+
+    /**
+     * Handles incoming generation result from Gemini API / BrowserMockBackend.
+     */
+    function handleGeminiGenerationSuccess(response, params) {
+      currentGeneratedBatch = (response && Array.isArray(response.items)) ? response.items : [];
+      currentGenerationMetadata = {
+        cached: Boolean(response && response.cached),
+        tokenUsage: response ? response.tokenUsage : { promptTokens: 0, candidateTokens: 0, totalTokens: 0 },
+        rateLimits: response ? response.rateLimits : {},
+        latencyMs: response ? response.latencyMs : null,
+        model: params ? params.model : 'gemini-1.5-flash',
+        gradeClass: params ? (params.gradeClass || params.grade) : 'Class 3',
+        subject: params ? params.subject : 'General Science',
+        chapter: params ? params.chapter : 'General',
+        topic: params ? params.topic : 'Core Concepts'
+      };
+      renderAiGenPreviewDeck();
+    }
+
+    function renderAiGenerationPreviewDeck(items, params) {
+      handleGeminiGenerationSuccess({ items: items, success: true }, params);
+    }
+
+    /**
+     * Renders or updates the interactive preview deck based on currentGeneratedBatch.
+     */
+    function renderAiGenPreviewDeck() {
+      const previewDeck = document.getElementById('aiGenPreviewDeck');
+      const summaryBanner = document.getElementById('aiGenSummaryBanner');
+      const summaryStatusBadge = document.getElementById('aiGenSummaryStatusBadge');
+      const summaryLatency = document.getElementById('aiGenSummaryLatency');
+      const summaryPromptTokens = document.getElementById('aiGenSummaryPromptTokens');
+      const summaryCandidateTokens = document.getElementById('aiGenSummaryCandidateTokens');
+      const summaryTotalTokens = document.getElementById('aiGenSummaryTotalTokens');
+      const countBadge = document.getElementById('aiGenDeckCountBadge');
+      const commitBtn = document.getElementById('aiGenCommitBtn');
+      const commitCountBadge = document.getElementById('aiGenCommitCountBadge');
+      const emptyState = document.getElementById('aiGenPreviewEmptyState');
+      const questionsList = document.getElementById('aiGenQuestionsList');
+
+      if (!previewDeck) return;
+      previewDeck.classList.remove('hidden');
+
+      const count = currentGeneratedBatch.length;
+
+      // 1. Update Summary Banner
+      if (currentGenerationMetadata && summaryBanner) {
+        summaryBanner.classList.remove('hidden');
+        if (currentGenerationMetadata.cached) {
+          if (summaryStatusBadge) {
+            summaryStatusBadge.className = "px-2.5 py-1 text-xs font-bold rounded-none bg-[#7FBF19]/20 text-[#09293D] border border-[#7FBF19] flex items-center gap-1";
+            summaryStatusBadge.innerHTML = "⚡ Served from SHA-256 Cache (0 Tokens Burned)";
+          }
+        } else {
+          if (summaryStatusBadge) {
+            summaryStatusBadge.className = "px-2.5 py-1 text-xs font-bold rounded-none bg-[#1C5682]/20 text-[#09293D] border border-[#1C5682] flex items-center gap-1";
+            const modelName = currentGenerationMetadata.model || "Gemini 1.5 Flash";
+            summaryStatusBadge.innerHTML = `✨ Generated via ${escapeHtml(modelName)}`;
+          }
+        }
+
+        const usage = currentGenerationMetadata.tokenUsage || { promptTokens: 0, candidateTokens: 0, totalTokens: 0 };
+        if (summaryPromptTokens) summaryPromptTokens.innerText = (usage.promptTokens || 0).toLocaleString();
+        if (summaryCandidateTokens) summaryCandidateTokens.innerText = (usage.candidateTokens || 0).toLocaleString();
+        if (summaryTotalTokens) summaryTotalTokens.innerText = (usage.totalTokens || 0).toLocaleString();
+        if (summaryLatency) summaryLatency.innerText = (currentGenerationMetadata.latencyMs ? currentGenerationMetadata.latencyMs + 'ms' : 'Fast');
+      }
+
+      // 2. Update Header Badges & Commit Button State
+      if (countBadge) countBadge.innerText = `Showing ${count} Item${count === 1 ? '' : 's'}`;
+      if (commitCountBadge) commitCountBadge.innerText = String(count);
+
+      if (count === 0) {
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (questionsList) {
+          questionsList.innerHTML = '';
+          questionsList.classList.add('hidden');
+        }
+        if (commitBtn) commitBtn.disabled = true;
+        return;
+      }
+
+      if (emptyState) emptyState.classList.add('hidden');
+      if (commitBtn) commitBtn.disabled = false;
+      if (questionsList) {
+        questionsList.classList.remove('hidden');
+        questionsList.innerHTML = currentGeneratedBatch.map(function(item, idx) {
+          const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+          const rawOpts = Array.isArray(item.options) ? item.options : [];
+          const correctIdx = Number(item.correctOptionIndex) || 0;
+
+          const optionsHtml = rawOpts.map(function(opt, optIdx) {
+            const isCorrect = optIdx === correctIdx;
+            const borderClass = isCorrect ? 'border-2 border-[#7FBF19] bg-[#7FBF19]/10' : 'border border-[#DED9D3] bg-white';
+            const badgeClass = isCorrect ? 'bg-[#7FBF19] text-white' : 'bg-[#09293D] text-white';
+
+            return `
+              <div class="flex items-center gap-2 p-2 rounded-none transition ${borderClass}">
+                <input type="radio" name="aiGenOptCorrect_${idx}" ${isCorrect ? 'checked' : ''} onchange="updateGeneratedQuestionCorrectIndex(${idx}, ${optIdx})" class="accent-[#7FBF19] w-4 h-4 cursor-pointer" title="Mark Option ${letters[optIdx]} as Correct">
+                <span class="px-2 py-0.5 text-xs font-bold rounded-none ${badgeClass}">${letters[optIdx]}</span>
+                <input type="text" value="${escapeHtml(opt)}" oninput="updateGeneratedQuestionOption(${idx}, ${optIdx}, this.value)" class="flex-1 text-xs p-1.5 bg-transparent border-0 focus:outline-none text-[#09293D] font-medium" placeholder="Option text...">
+                ${isCorrect ? '<span class="text-[10px] font-bold text-[#7FBF19] uppercase tracking-wider px-1">✓ Correct</span>' : ''}
+              </div>
+            `;
+          }).join('');
+
+          return `
+            <div class="bg-[#F9F8F3] border border-[#DED9D3] rounded-none p-4 space-y-3 font-sans">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[#DED9D3] pb-2">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="px-2 py-0.5 text-xs font-bold rounded-none bg-[#09293D] text-white">Q${idx + 1}</span>
+                  <span class="px-2 py-0.5 text-xs font-bold rounded-none bg-[#1C5682] text-white">${escapeHtml(item.questionType || 'MCQ')}</span>
+                  <span class="px-2 py-0.5 text-xs font-bold rounded-none bg-[#666D57] text-[#F4F2EA]">Bloom: ${escapeHtml(item.bloomLevel || 'Applying')}</span>
+                  <span class="px-2 py-0.5 text-xs font-bold rounded-none bg-white text-[#09293D] border border-[#DED9D3]">Difficulty: ${escapeHtml(item.difficulty || 'Medium')}</span>
+                  <span class="px-2 py-0.5 text-xs font-bold rounded-none bg-[#DFE0C3] text-[#09293D] font-bold">CBSE</span>
+                </div>
+                <button type="button" onclick="discardGeneratedQuestion(${idx})" class="px-2.5 py-1 text-xs font-bold rounded-none bg-white text-[#D80707] hover:bg-[#F9F8F3] border border-[#D80707] transition flex items-center gap-1 cursor-pointer">
+                  <span>🗑️ Discard</span>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-[#09293D] mb-1">Question Stem / Prompt (Click to edit):</label>
+                <textarea oninput="updateGeneratedQuestionText(${idx}, this.value)" rows="2" class="w-full text-xs p-2.5 bg-white border border-[#DED9D3] focus:border-[#09293D] focus:outline-none rounded-none text-[#09293D] font-sans">${escapeHtml(item.questionText || '')}</textarea>
+              </div>
+
+              ${rawOpts.length > 0 ? `
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-xs font-bold text-[#09293D]">Answer Options (Select correct option):</label>
+                    <span class="text-[11px] text-[#666D57]">Radio selects the verified correct answer</span>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    ${optionsHtml}
+                  </div>
+                </div>
+              ` : ''}
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 border-t border-[#DED9D3]">
+                <div>
+                  <label class="block text-xs font-bold text-[#666D57] mb-1">💡 Pedagogical Hint:</label>
+                  <input type="text" value="${escapeHtml(item.hint || '')}" oninput="updateGeneratedQuestionHint(${idx}, this.value)" class="w-full text-xs p-2 bg-white border border-[#DED9D3] focus:border-[#09293D] focus:outline-none rounded-none text-[#09293D]">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-[#666D57] mb-1">📖 Worked Explanation &amp; Rationale:</label>
+                  <textarea oninput="updateGeneratedQuestionExplanation(${idx}, this.value)" rows="2" class="w-full text-xs p-2 bg-white border border-[#DED9D3] focus:border-[#09293D] focus:outline-none rounded-none text-[#09293D] font-sans">${escapeHtml(item.explanation || '')}</textarea>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    /**
+     * Updates question prompt text in currentGeneratedBatch.
+     */
+    function updateGeneratedQuestionText(idx, text) {
+      if (currentGeneratedBatch[idx]) {
+        currentGeneratedBatch[idx].questionText = text;
+      }
+    }
+
+    /**
+     * Updates specific option text in currentGeneratedBatch.
+     */
+    function updateGeneratedQuestionOption(idx, optIdx, text) {
+      if (currentGeneratedBatch[idx] && Array.isArray(currentGeneratedBatch[idx].options)) {
+        currentGeneratedBatch[idx].options[optIdx] = text;
+        currentGeneratedBatch[idx].optionsJson = JSON.stringify(currentGeneratedBatch[idx].options);
+      }
+    }
+
+    /**
+     * Updates correctOptionIndex in currentGeneratedBatch and refreshes preview deck styling.
+     */
+    function updateGeneratedQuestionCorrectIndex(idx, optIdx) {
+      if (currentGeneratedBatch[idx]) {
+        currentGeneratedBatch[idx].correctOptionIndex = Number(optIdx);
+        renderAiGenPreviewDeck();
+      }
+    }
+
+    /**
+     * Updates hint in currentGeneratedBatch.
+     */
+    function updateGeneratedQuestionHint(idx, text) {
+      if (currentGeneratedBatch[idx]) {
+        currentGeneratedBatch[idx].hint = text;
+      }
+    }
+
+    /**
+     * Updates explanation in currentGeneratedBatch.
+     */
+    function updateGeneratedQuestionExplanation(idx, text) {
+      if (currentGeneratedBatch[idx]) {
+        currentGeneratedBatch[idx].explanation = text;
+      }
+    }
+
+    /**
+     * Discards a single generated item from the batch.
+     */
+    function discardGeneratedQuestion(idx) {
+      if (idx >= 0 && idx < currentGeneratedBatch.length) {
+        playSound('coin');
+        currentGeneratedBatch.splice(idx, 1);
+        renderAiGenPreviewDeck();
+      }
+    }
+
+    /**
+     * Discards the entire batch currently in the inspection deck.
+     */
+    function discardEntireGeneratedBatch() {
+      playSound('coin');
+      currentGeneratedBatch = [];
+      currentGenerationMetadata = null;
+      const previewDeck = document.getElementById('aiGenPreviewDeck');
+      if (previewDeck) previewDeck.classList.add('hidden');
+      const questionsList = document.getElementById('aiGenQuestionsList');
+      if (questionsList) questionsList.innerHTML = '';
+    }
+
+    /**
+     * Direct Storage Ingestion Bridge: Commits all inspected/edited questions to Table 11 CurriculumQuizzes.
+     */
+    function commitGeneratedBatchToStorage() {
+      if (!currentGeneratedBatch || currentGeneratedBatch.length === 0) {
+        alertCustom("No Questions to Commit", "The inspection deck is currently empty. Generate a batch first.");
+        return;
+      }
+
+      for (let i = 0; i < currentGeneratedBatch.length; i++) {
+        const q = currentGeneratedBatch[i];
+        if (!q.questionText || !q.questionText.trim()) {
+          alertCustom("Incomplete Question", `Question #${i + 1} is missing question prompt text.`);
+          return;
+        }
+      }
+
+      const adminUser = (typeof getActiveSessionUser === 'function') ? getActiveSessionUser() : { id: 'u_adm_demo' };
+      const adminId = (adminUser && (adminUser.role === 'admin' || adminUser.id === 'u_adm_demo')) ? adminUser.id : 'u_adm_demo';
+
+      const commitBtn = document.getElementById('aiGenCommitBtn');
+      const commitStatus = document.getElementById('aiGenCommitStatus');
+
+      if (commitBtn) {
+        commitBtn.disabled = true;
+        commitBtn.innerHTML = `<span>⏳ Committing ${currentGeneratedBatch.length} Items...</span>`;
+      }
+      if (commitStatus) {
+        commitStatus.classList.remove('hidden');
+        commitStatus.innerText = `Preparing ${currentGeneratedBatch.length} questions for Table 11 CurriculumQuizzes ingestion...`;
+      }
+
+      const now = new Date().toISOString();
+      const defaultGrade = (currentGenerationMetadata && currentGenerationMetadata.gradeClass) || "Class 3";
+      const defaultSubject = (currentGenerationMetadata && currentGenerationMetadata.subject) || "General Science";
+      const defaultChapter = (currentGenerationMetadata && currentGenerationMetadata.chapter) || "General";
+      const defaultTopic = (currentGenerationMetadata && currentGenerationMetadata.topic) || "Core Concepts";
+
+      const mappedBatch = currentGeneratedBatch.map(function(item, idx) {
+        const quizId = item.id || item.quizId || ("curr_" + Date.now() + "_" + (idx + 1));
+        const rawOpts = Array.isArray(item.options) ? item.options : [];
+        const optionsJson = typeof item.optionsJson === 'string' ? item.optionsJson : JSON.stringify(rawOpts);
+        const grade = item.grade || defaultGrade;
+        const subject = item.subject || defaultSubject;
+        const chapter = item.chapter || defaultChapter;
+        const topic = item.topic || defaultTopic;
+        const title = item.title || `${chapter} - ${topic} (Q${idx + 1})`;
+
+        return {
+          id: quizId,
+          quizId: quizId,
+          title: title,
+          grade: grade,
+          subject: subject,
+          chapter: chapter,
+          topic: topic,
+          questionText: item.questionText || title,
+          options: rawOpts,
+          optionsJson: optionsJson,
+          correctOptionIndex: Number(item.correctOptionIndex) || 0,
+          hint: item.hint || "",
+          explanation: item.explanation || "",
+          bloomLevel: item.bloomLevel || "Applying",
+          difficulty: item.difficulty || "Medium",
+          examCategory: item.examCategory || "CBSE",
+          orderIndex: idx + 1,
+          isActive: true,
+          createdAt: item.createdAt || now,
+          createdBy: adminId,
+          updatedAt: now
+        };
+      });
+
+      const uploadPayload = {
+        adminUserId: adminId,
+        contentType: "CurriculumQuizzes",
+        tableName: "CurriculumQuizzes",
+        items: mappedBatch,
+        records: mappedBatch
+      };
+
+      ZoptroApiClient.bulkUploadContentBatch(uploadPayload).then(function(res) {
+        if (commitBtn) {
+          commitBtn.disabled = false;
+          commitBtn.innerHTML = `<span>🚀 Commit to Storage</span> <span id="aiGenCommitCountBadge" class="bg-white/20 px-1.5 py-0.5 text-[10px] rounded-none font-mono">${currentGeneratedBatch.length}</span>`;
+        }
+        if (commitStatus) commitStatus.classList.add('hidden');
+
+        if (res && res.success) {
+          playSound('correct');
+          spawnConfetti();
+          const importedCount = res.importedCount || mappedBatch.length;
+          alertCustom("Curriculum Ingestion Complete! 📦", `Successfully imported ${importedCount} CBSE/NCERT curriculum items into Table 11 CurriculumQuizzes for ${defaultGrade}.`);
+
+          currentGeneratedBatch = [];
+          currentGenerationMetadata = null;
+          const previewDeck = document.getElementById('aiGenPreviewDeck');
+          if (previewDeck) previewDeck.classList.add('hidden');
+          const questionsList = document.getElementById('aiGenQuestionsList');
+          if (questionsList) questionsList.innerHTML = '';
+
+          if (typeof switchAdminTab === 'function') {
+            switchAdminTab('curriculum_quizzes');
+          }
+        } else {
+          playSound('wrong');
+          const errMsg = (res && res.error) ? res.error : "Unknown ingestion failure.";
+          alertCustom("Ingestion Error", errMsg);
+          if (commitStatus) {
+            commitStatus.classList.remove('hidden');
+            commitStatus.innerText = `Ingestion failed: ${errMsg}`;
+          }
+        }
+      }).catch(function(err) {
+        if (commitBtn) {
+          commitBtn.disabled = false;
+          commitBtn.innerHTML = `<span>🚀 Commit to Storage</span> <span id="aiGenCommitCountBadge" class="bg-white/20 px-1.5 py-0.5 text-[10px] rounded-none font-mono">${currentGeneratedBatch.length}</span>`;
+        }
+        playSound('wrong');
+        const errMsg = err && err.message ? err.message : String(err);
+        alertCustom("Upload Failed", errMsg);
+        if (commitStatus) {
+          commitStatus.classList.remove('hidden');
+          commitStatus.innerText = `Network Error: ${errMsg}`;
+        }
+      });
+    }
+
+    function handleCommitAiGeneratedToStorage() {
+      return commitGeneratedBatchToStorage();
     }
 
     function loadSampleBulkBatchTemplate() {
@@ -10209,7 +11748,7 @@ const ZoptroApiClient = {
       if (empty) empty.classList.add('hidden');
       if (lockPill) lockPill.innerText = "LockService: Querying...";
 
-      if (currentAdminTab === 'bulk_upload') {
+      if (currentAdminTab === 'bulk_upload' || currentAdminTab === 'ai_generate') {
         if (spinner) spinner.classList.add('hidden');
         return;
       }

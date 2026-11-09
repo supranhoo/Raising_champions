@@ -102,6 +102,24 @@ const SCHEMAS = {
     "questionId", "questionText", "optionsJson", "studentChoiceIndex",
     "studentChoiceText", "correctOptionIndex", "isCorrect", "pointsEarned",
     "explanation", "timeSpentSeconds", "answeredAt"
+  ],
+  // Table 15: Gemini Token Metering & API Invocation Logs
+  GeminiTokenLogs: [
+    "id",
+    "timestamp",
+    "adminUserId",
+    "model",
+    "grade",
+    "subject",
+    "topic",
+    "questionType",
+    "quantity",
+    "promptTokens",
+    "candidateTokens",
+    "totalTokens",
+    "cachedFlag",
+    "status",
+    "latencyMs"
   ]
 };
 
@@ -3895,6 +3913,1158 @@ function updateChildGovernance(payload) {
   });
 }
 
+// =========================================================================
+// MILESTONE 2: GEMINI API GENERATION PIPELINE & TOKEN QUOTA SYSTEM
+// =========================================================================
+
+/**
+ * In-memory fallback cache for Node.js test environments lacking native CacheService.
+ */
+var _inMemoryScriptCache = {
+  _data: {},
+  get: function(key) {
+    const entry = this._data[key];
+    if (!entry) return null;
+    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+      delete this._data[key];
+      return null;
+    }
+    return entry.val;
+  },
+  put: function(key, value, ttlSeconds) {
+    const ttl = (ttlSeconds !== undefined) ? Number(ttlSeconds) : 600;
+    if (isNaN(ttl) || ttl < 1 || ttl > 21600) {
+      throw new Error("Exception: The expiration must be between 1 and 21600 seconds.");
+    }
+    this._data[key] = {
+      val: String(value),
+      expiresAt: Date.now() + (ttl * 1000)
+    };
+  },
+  remove: function(key) {
+    delete this._data[key];
+  }
+};
+
+/**
+ * Safe accessor for CacheService with in-memory fallback.
+ */
+function getScriptCache_() {
+  if (typeof CacheService !== "undefined" && CacheService && CacheService.getScriptCache) {
+    try {
+      const c = CacheService.getScriptCache();
+      if (c) return c;
+    } catch (e) {}
+  }
+  if (typeof global !== "undefined" && global.CacheService && global.CacheService.getScriptCache) {
+    try {
+      const c = global.CacheService.getScriptCache();
+      if (c) return c;
+    } catch (e) {}
+  }
+  return _inMemoryScriptCache;
+}
+
+/**
+ * In-memory fallback property store for Node.js test environments lacking native PropertiesService.
+ */
+var _inMemoryScriptProperties = {
+  _props: {},
+  getProperty: function(key) {
+    return this._props.hasOwnProperty(key) ? String(this._props[key]) : null;
+  },
+  setProperty: function(key, value) {
+    this._props[key] = String(value);
+  },
+  deleteProperty: function(key) {
+    delete this._props[key];
+  },
+  getProperties: function() {
+    return Object.assign({}, this._props);
+  },
+  setProperties: function(properties, optDeleteAllOthers) {
+    if (optDeleteAllOthers) this._props = {};
+    if (properties && typeof properties === "object") {
+      for (const k in properties) {
+        if (properties.hasOwnProperty(k)) {
+          this._props[k] = String(properties[k]);
+        }
+      }
+    }
+  },
+  deleteAllProperties: function() {
+    this._props = {};
+  }
+};
+
+/**
+ * Safe accessor for PropertiesService with in-memory fallback.
+ */
+function getScriptProperties_() {
+  if (typeof PropertiesService !== "undefined" && PropertiesService && PropertiesService.getScriptProperties) {
+    try {
+      return PropertiesService.getScriptProperties();
+    } catch (e) {}
+  }
+  if (typeof global !== "undefined" && global.PropertiesService && global.PropertiesService.getScriptProperties) {
+    try {
+      return global.PropertiesService.getScriptProperties();
+    } catch (e) {}
+  }
+  return _inMemoryScriptProperties;
+}
+
+/**
+ * Safe accessor for UrlFetchApp.
+ */
+function getUrlFetchApp_() {
+  if (typeof UrlFetchApp !== "undefined" && UrlFetchApp && UrlFetchApp.fetch) {
+    return UrlFetchApp;
+  }
+  if (typeof global !== "undefined" && global.UrlFetchApp && global.UrlFetchApp.fetch) {
+    return global.UrlFetchApp;
+  }
+  return null;
+}
+
+/**
+ * Master CBSE/NCERT Pedagogical System Instruction for Gemini Models.
+ */
+const GEMINI_CBSE_SYSTEM_INSTRUCTION = {
+  parts: [{
+    text: [
+      "You are an expert CBSE/NCERT curriculum designer, psychometrician, and master educator for Indian school students (Class 1 to Class 10).",
+      "Your mission is to generate high-quality, syllabus-accurate, pedagogically rigorous assessment questions.",
+      "",
+      "Strict Pedagogical Principles:",
+      "1. CURRICULUM FIDELITY: Strictly adhere to the NCERT/CBSE syllabus for the designated Grade and Subject.",
+      "2. COGNITIVE CALIBRATION: Calibrate vocabulary, complexity, and reading level to the child's exact age and Grade.",
+      "3. BLOOM'S TAXONOMY ALIGNMENT: Questions must explicitly reflect the requested cognitive domain (Remembering, Understanding, Applying, Analyzing, Evaluating, Creating).",
+      "4. DISTRACTOR INTEGRITY (for MCQs):",
+      "   - Provide exactly 4 options: A, B, C, D (indices 0, 1, 2, 3).",
+      "   - Exactly ONE option is correct.",
+      "   - The three distractors must be plausible, developmentally relevant misconceptions, not obviously absurd or trivial.",
+      "   - Avoid 'All of the above' or 'None of the above'.",
+      "   - Options must be mutually exclusive and comparable in length.",
+      "5. PEDAGOGICAL HINTS & EXPLANATIONS:",
+      "   - 'hint': A supportive, non-revealing clue encouraging critical thinking and metacognitive recall.",
+      "   - 'explanation': A thorough, crystal-clear conceptual explanation detailing WHY the correct option is right and WHY the specific misconceptions in the distractors are incorrect.",
+      "6. ZERO FORMULA INJECTION: Never output leading arithmetic operators (=, +, -, @) that could trigger spreadsheet formula execution.",
+      "7. STRUCTURED JSON COMPLIANCE: Return ONLY a valid JSON array matching the declared responseSchema."
+    ].join("\n")
+  }]
+};
+
+/**
+ * Compiles the user prompt with interpolated curriculum parameters.
+ */
+function compileGeminiUserPrompt(params) {
+  const p = params || {};
+  const gradeClass = normalizeGrade(p.gradeClass || p.grade) || "Class 3";
+  const subject = p.subject ? String(p.subject).trim() : "General Science";
+  const chapter = p.chapter ? String(p.chapter).trim() : "General";
+  const topic = p.topic ? String(p.topic).trim() : "Core Concepts";
+  const questionType = p.questionType ? String(p.questionType).trim().toUpperCase() : "MCQ";
+  const quantity = Math.min(Math.max(Number(p.quantity) || 5, 1), 20);
+  const difficulty = p.difficulty ? String(p.difficulty).trim() : "Medium";
+  const bloomLevel = p.bloomLevel ? String(p.bloomLevel).trim() : "Applying";
+
+  return [
+    "Target Assessment Specifications:",
+    "- Educational Board: CBSE / NCERT (National Curriculum Framework)",
+    "- Grade / Level: " + gradeClass,
+    "- Subject: " + subject,
+    "- Chapter: " + chapter,
+    "- Specific Topic: " + topic,
+    "- Question Type: " + questionType,
+    "- Number of Items to Generate: " + quantity,
+    "- Target Difficulty: " + difficulty,
+    "- Cognitive Level (Bloom's Revised): " + bloomLevel,
+    "",
+    "Requirements:",
+    "Generate exactly " + quantity + " high-yield, classroom-ready assessment items.",
+    "Ensure each item includes a descriptive title, unambiguous questionText, exactly 4 clear options for MCQs, the 0-based integer correctOptionIndex, a thought-provoking hint, and a comprehensive educational explanation.",
+    "All items must be structured according to the supplied responseSchema."
+  ].join("\n");
+}
+
+/**
+ * Computes canonical 10-tuple SHA-256 fingerprint for deduplication caching.
+ * Joined by double-colon '::' to prevent delimiter injection collisions.
+ * Matches BrowserMockBackend formula byte-for-byte.
+ *
+ * @param {Object} payload - Parameter configuration object.
+ * @returns {string} 64-character lowercase hexadecimal SHA-256 hash.
+ */
+function computeGeminiCacheFingerprint(payload) {
+  const p = payload || {};
+  const model = p.model ? String(p.model).trim() : "gemini-1.5-flash";
+  const grade = normalizeGrade(p.gradeClass || p.grade) || "Class 3";
+  const subject = p.subject ? String(p.subject).trim() : "General Science";
+  const chapter = p.chapter ? String(p.chapter).trim() : "General";
+  const topic = p.topic ? String(p.topic).trim() : "Core Concepts";
+  const questionType = p.questionType ? String(p.questionType).trim().toUpperCase() : "MCQ";
+  const quantity = String(Math.min(Math.max(Number(p.quantity) || 5, 1), 20));
+  const difficulty = p.difficulty ? String(p.difficulty).trim() : "Medium";
+  const bloomLevel = p.bloomLevel ? String(p.bloomLevel).trim() : "Applying";
+
+  const rawKey = [
+    "gemini",
+    model,
+    grade,
+    subject,
+    chapter,
+    topic,
+    questionType,
+    quantity,
+    difficulty,
+    bloomLevel
+  ].join("::");
+
+  return sha256(rawKey);
+}
+
+// Canonical alias for contract parity
+var computeGeminiRequestFingerprint = computeGeminiCacheFingerprint;
+
+/**
+ * Strips markdown code fences (```json ... ```) and leading/trailing whitespace or BOM tokens.
+ */
+function stripMarkdownFences(rawText) {
+  if (!rawText || typeof rawText !== "string") return "";
+  let clean = rawText.trim();
+  clean = clean.replace(/^```(?:json)?\s*/i, "");
+  clean = clean.replace(/\s*```\s*$/, "");
+  clean = clean.replace(/^\uFEFF/, "");
+  return clean.trim();
+}
+
+/**
+ * Retrieves cached Gemini questions by canonical SHA-256 fingerprint.
+ *
+ * @param {string} fingerprint - 64-character SHA-256 hash.
+ * @returns {Object|null} Cached response entry or null on cache miss.
+ */
+function getCachedGeminiResponse(fingerprint) {
+  if (!fingerprint) return null;
+  const cacheKey = "gemini_cache_" + fingerprint;
+  const cache = getScriptCache_();
+  try {
+    const raw = cache.get(cacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.items) && parsed.items.length > 0) {
+      return parsed;
+    }
+  } catch (err) {
+    if (typeof Logger !== "undefined") {
+      Logger.log("Notice: Cache read error for key " + cacheKey + ": " + (err ? err.message : ""));
+    }
+  }
+  return null;
+}
+
+/**
+ * Persists generated Gemini questions into CacheService with 6-hour TTL.
+ *
+ * @param {string} fingerprint - 64-character SHA-256 hash.
+ * @param {Object} data - { items: Array, model: string, promptTokens: number, candidateTokens: number }
+ * @param {number} [ttlSeconds=21600] - TTL in seconds (default 6 hours).
+ * @returns {boolean} True if successfully cached, false otherwise.
+ */
+function setCachedGeminiResponse(fingerprint, data, ttlSeconds) {
+  if (!fingerprint || !data || !Array.isArray(data.items)) return false;
+  const cacheKey = "gemini_cache_" + fingerprint;
+  const cache = getScriptCache_();
+  const effectiveTtl = (typeof ttlSeconds === "number" && ttlSeconds > 0) ? Math.min(Math.max(1, Math.floor(ttlSeconds)), 21600) : 21600;
+
+  try {
+    const payloadToStore = {
+      fingerprint: fingerprint,
+      timestamp: Date.now(),
+      items: data.items,
+      model: data.model || "gemini-1.5-flash",
+      promptTokens: Number(data.promptTokens) || 0,
+      candidateTokens: Number(data.candidateTokens) || 0,
+      totalTokens: Number(data.totalTokens !== undefined ? data.totalTokens : ((data.promptTokens || 0) + (data.candidateTokens || 0)))
+    };
+    cache.put(cacheKey, JSON.stringify(payloadToStore), effectiveTtl);
+    return true;
+  } catch (err) {
+    if (typeof Logger !== "undefined") {
+      Logger.log("Notice: Cache write error for key " + cacheKey + ": " + (err ? err.message : ""));
+    }
+    return false;
+  }
+}
+
+/**
+ * Appends a metered token consumption record to Table 15 GeminiTokenLogs.
+ * Defensively handles field aliases, sanitizes strings to prevent formula
+ * injection (CWE-1236), and safely records execution telemetry.
+ *
+ * @param {Object} logEntry - Invocation details and token usage metadata.
+ * @returns {Object} The normalized log entry persisted to storage.
+ */
+function recordGeminiTokenUsageLog(logEntry) {
+  const p = logEntry || {};
+  const now = new Date().toISOString();
+  const logId = p.id || ("tok_" + Date.now() + "_" + Math.floor(Math.random() * 10000));
+
+  const promptTokens = Number(p.promptTokens || 0);
+  const candidateTokens = Number(p.candidateTokens || 0);
+  const totalTokens = Number(p.totalTokens !== undefined ? p.totalTokens : (promptTokens + candidateTokens));
+
+  const cachedFlag = (p.cachedFlag !== undefined)
+    ? Boolean(p.cachedFlag)
+    : (p.cached !== undefined ? Boolean(p.cached) : Boolean(p.isCached));
+
+  const normalized = {
+    id: String(logId),
+    timestamp: p.timestamp ? String(p.timestamp) : now,
+    adminUserId: p.adminUserId ? String(p.adminUserId) : "",
+    model: p.model ? String(p.model) : "gemini-1.5-flash",
+    grade: p.grade ? String(p.grade) : (p.gradeClass ? String(p.gradeClass) : ""),
+    subject: p.subject ? String(p.subject) : "",
+    topic: p.topic ? String(p.topic) : "",
+    questionType: p.questionType ? String(p.questionType) : "MCQ",
+    quantity: Number(p.quantity || p.itemCount || 0),
+    promptTokens: promptTokens,
+    candidateTokens: candidateTokens,
+    totalTokens: totalTokens,
+    cachedFlag: cachedFlag,
+    status: p.status ? String(p.status) : "SUCCESS",
+    latencyMs: Number(p.latencyMs !== undefined ? p.latencyMs : (p.durationMs !== undefined ? p.durationMs : 0))
+  };
+
+  normalized.adminUserId = sanitizeSheetCellValue(normalized.adminUserId);
+  normalized.model = sanitizeSheetCellValue(normalized.model);
+  normalized.grade = sanitizeSheetCellValue(normalized.grade);
+  normalized.subject = sanitizeSheetCellValue(normalized.subject);
+  normalized.topic = sanitizeSheetCellValue(normalized.topic);
+  normalized.questionType = sanitizeSheetCellValue(normalized.questionType);
+  normalized.status = sanitizeSheetCellValue(normalized.status);
+
+  try {
+    appendSheetRecord("GeminiTokenLogs", normalized);
+  } catch (err) {
+    if (typeof Logger !== "undefined") {
+      Logger.log("Notice: Failed to append GeminiTokenLogs record: " + (err ? err.message : ""));
+    }
+  }
+
+  return normalized;
+}
+
+/**
+ * Sliding-Window Rate Limiter & Daily Quota Guard with Concurrency Locking.
+ * Strictly enforces <= 15 RPM across rolling 60-second window and <= 1,500 RPD.
+ *
+ * @param {string} [model="gemini-1.5-flash"] - Model identifier for quota isolation.
+ * @param {boolean} [consume=true] - If false, inspects quota state without incrementing counters.
+ * @returns {{
+ *   allowed: boolean,
+ *   rpmLimit: number,
+ *   rpmCurrent: number,
+ *   rpmRemaining: number,
+ *   rpdLimit: number,
+ *   rpdCurrent: number,
+ *   dailyRemaining: number,
+ *   retryAfterSeconds: number,
+ *   error?: string
+ * }} Rate limiting decision object.
+ */
+function checkAndIncrementRateLimit(model, consume) {
+  const selectedModel = model ? String(model).trim() : "gemini-1.5-flash";
+  const modelSafeKey = selectedModel.replace(/[^a-zA-Z0-9_.-]/g, "_");
+  const shouldConsume = (consume !== false);
+
+  const lock = (typeof LockService !== "undefined" && LockService && LockService.getScriptLock)
+    ? LockService.getScriptLock()
+    : null;
+
+  let acquired = false;
+  if (lock && typeof lock.tryLock === "function") {
+    try {
+      acquired = lock.tryLock(3000);
+    } catch (lockErr) {
+      acquired = false;
+    }
+    if (!acquired) {
+      return {
+        allowed: false,
+        rpmLimit: 15,
+        rpmCurrent: 15,
+        rpmRemaining: 0,
+        rpdLimit: 1500,
+        rpdCurrent: 0,
+        dailyRemaining: 0,
+        retryAfterSeconds: 2,
+        error: "RATE_LIMIT_LOCK_TIMEOUT: High concurrency detected on rate limiter. Please retry momentarily."
+      };
+    }
+  }
+
+  try {
+    const cache = getScriptCache_();
+    const now = Date.now();
+    const todayUtc = new Date(now).toISOString().substring(0, 10);
+    const rpdKey = "gemini_rpd_" + modelSafeKey + "_" + todayUtc;
+    const timestampsKey = "gemini_rpm_timestamps_" + modelSafeKey;
+
+    const rpdLimit = 1500;
+    const rpmLimit = 15;
+
+    // Calculate seconds until UTC midnight (1 to 86400) and clamp cache TTL to GAS 21600 ceiling
+    const secondsUntilUtcMidnight = Math.max(1, 86400 - (Math.floor(now / 1000) % 86400));
+    const rpdCacheTtl = Math.min(secondsUntilUtcMidnight, 21600);
+
+    // 1. Two-Tier Daily Quota Resolution (L1 CacheService -> L2 PropertiesService backup)
+    let dailyCount = 0;
+    let dailyRaw = null;
+    try {
+      if (cache && typeof cache.get === "function") {
+        dailyRaw = cache.get(rpdKey);
+      }
+    } catch (cacheGetErr) {
+      dailyRaw = null;
+    }
+
+    if (dailyRaw !== null && dailyRaw !== undefined && dailyRaw !== "") {
+      dailyCount = parseInt(dailyRaw, 10) || 0;
+    } else {
+      // L1 Cache Miss: Recover daily count from persistent L2 PropertiesService
+      const props = getScriptProperties_();
+      if (props && typeof props.getProperty === "function") {
+        try {
+          const propVal = props.getProperty(rpdKey);
+          if (propVal !== null && propVal !== undefined && propVal !== "") {
+            dailyCount = parseInt(propVal, 10) || 0;
+            // Rehydrate L1 cache so subsequent requests avoid L2 PropertiesService overhead
+            try {
+              if (cache && typeof cache.put === "function") {
+                cache.put(rpdKey, String(dailyCount), rpdCacheTtl);
+              }
+            } catch (rehydrateErr) {}
+          }
+        } catch (propErr) {
+          // Graceful fallback to 0 if PropertiesService is unreachable
+        }
+      }
+    }
+
+    if (dailyCount >= rpdLimit) {
+      return {
+        allowed: false,
+        rpmLimit: rpmLimit,
+        rpmCurrent: 0,
+        rpmRemaining: 0,
+        rpdLimit: rpdLimit,
+        rpdCurrent: dailyCount,
+        dailyRemaining: 0,
+        retryAfterSeconds: secondsUntilUtcMidnight,
+        error: "DAILY_QUOTA_EXCEEDED: Free tier limit of 1,500 requests per day reached for " + selectedModel + ". Resets at UTC 00:00:00."
+      };
+    }
+
+    // 2. Sliding 60-Second Window Check (15 RPM)
+    let timestampsRaw = null;
+    try {
+      if (cache && typeof cache.get === "function") {
+        timestampsRaw = cache.get(timestampsKey);
+      }
+    } catch (cacheTsErr) {
+      timestampsRaw = null;
+    }
+
+    let timestamps = [];
+    if (timestampsRaw) {
+      try {
+        const parsed = JSON.parse(timestampsRaw);
+        if (Array.isArray(parsed)) {
+          timestamps = parsed;
+        }
+      } catch (e) {
+        timestamps = [];
+      }
+    }
+
+    const windowStart = now - 60000;
+    timestamps = timestamps.filter(function(ts) {
+      return typeof ts === "number" && !isNaN(ts) && ts > windowStart;
+    });
+
+    timestamps.sort(function(a, b) { return a - b; });
+
+    if (timestamps.length >= rpmLimit) {
+      const oldestTs = timestamps[0];
+      const retryAfterMs = (oldestTs + 60000) - now;
+      const retryAfterSeconds = Math.max(1, Math.ceil(retryAfterMs / 1000));
+      return {
+        allowed: false,
+        rpmLimit: rpmLimit,
+        rpmCurrent: timestamps.length,
+        rpmRemaining: 0,
+        rpdLimit: rpdLimit,
+        rpdCurrent: dailyCount,
+        dailyRemaining: Math.max(0, rpdLimit - dailyCount),
+        retryAfterSeconds: retryAfterSeconds,
+        error: "RATE_LIMIT_EXCEEDED: Free tier limit of 15 requests per minute reached for " + selectedModel + ". Please throttle requests."
+      };
+    }
+
+    // 3. Atomically Record Consumption if shouldConsume === true
+    if (shouldConsume) {
+      const nextDailyCount = dailyCount + 1;
+      timestamps.push(now);
+      try {
+        if (cache && typeof cache.put === "function") {
+          cache.put(timestampsKey, JSON.stringify(timestamps), 120);
+          cache.put(rpdKey, String(nextDailyCount), rpdCacheTtl);
+        }
+      } catch (cachePutErr) {}
+
+      // Persist to L2 PropertiesService for 24h durability beyond 6h GAS CacheService ceiling
+      const props = getScriptProperties_();
+      if (props && typeof props.setProperty === "function") {
+        try {
+          props.setProperty(rpdKey, String(nextDailyCount));
+          // Opportunistic cleanup of previous day's key on initial daily increment
+          if (dailyCount === 0 && typeof props.deleteProperty === "function") {
+            const yesterdayUtc = new Date(now - 86400000).toISOString().substring(0, 10);
+            const yesterdayKey = "gemini_rpd_" + modelSafeKey + "_" + yesterdayUtc;
+            try { props.deleteProperty(yesterdayKey); } catch (delErr) {}
+          }
+        } catch (propErr) {
+          if (typeof Logger !== "undefined") {
+            Logger.log("Notice: Failed to persist daily quota to PropertiesService: " + (propErr ? propErr.message : ""));
+          }
+        }
+      }
+
+      return {
+        allowed: true,
+        rpmLimit: rpmLimit,
+        rpmCurrent: timestamps.length,
+        rpmRemaining: Math.max(0, rpmLimit - timestamps.length),
+        rpdLimit: rpdLimit,
+        rpdCurrent: nextDailyCount,
+        dailyRemaining: Math.max(0, rpdLimit - nextDailyCount),
+        retryAfterSeconds: 0
+      };
+    }
+
+    // Non-consuming inspection
+    return {
+      allowed: true,
+      rpmLimit: rpmLimit,
+      rpmCurrent: timestamps.length,
+      rpmRemaining: Math.max(0, rpmLimit - timestamps.length),
+      rpdLimit: rpdLimit,
+      rpdCurrent: dailyCount,
+      dailyRemaining: Math.max(0, rpdLimit - dailyCount),
+      retryAfterSeconds: 0
+    };
+  } finally {
+    if (lock && acquired && typeof lock.releaseLock === "function") {
+      try { lock.releaseLock(); } catch (e) {}
+    }
+  }
+}
+
+/**
+ * Transports HTTP POST request to Google AI Studio via UrlFetchApp with muteHttpExceptions: true.
+ */
+function executeGeminiApiCall(model, apiKey, payloadJson) {
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" +
+              encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(apiKey);
+
+  const fetchService = getUrlFetchApp_();
+  if (!fetchService) {
+    return {
+      success: false,
+      statusCode: 0,
+      error: "URL_FETCH_APP_UNAVAILABLE: UrlFetchApp service is not available in the current environment.",
+      bodyText: "",
+      durationMs: 0
+    };
+  }
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payloadJson),
+    muteHttpExceptions: true,
+    validateHttpsCertificates: true
+  };
+
+  const startTime = Date.now();
+  let response;
+  try {
+    response = fetchService.fetch(url, options);
+  } catch (netErr) {
+    return {
+      success: false,
+      statusCode: 0,
+      error: "NETWORK_FAILURE: " + (netErr ? netErr.message : "Network error"),
+      bodyText: "",
+      durationMs: Date.now() - startTime
+    };
+  }
+
+  let statusCode = 200;
+  if (response && typeof response.getResponseCode === "function") {
+    statusCode = response.getResponseCode();
+  } else if (response && typeof response.statusCode === "number") {
+    statusCode = response.statusCode;
+  } else if (response && typeof response.status === "number") {
+    statusCode = response.status;
+  }
+
+  let responseText = "";
+  if (response && typeof response.getContentText === "function") {
+    responseText = response.getContentText();
+  } else if (response && typeof response.bodyText === "string") {
+    responseText = response.bodyText;
+  } else if (response && typeof response.body === "string") {
+    responseText = response.body;
+  } else if (typeof response === "string") {
+    responseText = response;
+  }
+
+  const durationMs = Date.now() - startTime;
+
+  return {
+    success: statusCode >= 200 && statusCode < 300,
+    statusCode: statusCode,
+    bodyText: responseText,
+    durationMs: durationMs
+  };
+}
+
+/**
+ * Ingestion Bridge: Transforms generated items into bulkUploadContentBatch format.
+ */
+function transformGeneratedItemsForBulkUpload(adminUserId, generationResult, params) {
+  const p = params || {};
+  const rawItems = (generationResult && Array.isArray(generationResult.items)) ? generationResult.items : [];
+  const grade = normalizeGrade(p.gradeClass || p.grade) || "Class 3";
+  const subject = p.subject ? String(p.subject).trim() : "General Science";
+  const chapter = p.chapter ? String(p.chapter).trim() : "General";
+  const topic = p.topic ? String(p.topic).trim() : "Core Concepts";
+
+  const items = rawItems.map(function(item, idx) {
+    const rawOpts = Array.isArray(item.options) ? item.options : [];
+    return {
+      id: item.id || ("curr_" + Date.now() + "_" + (idx + 1)),
+      grade: item.grade || grade,
+      subject: item.subject || subject,
+      examCategory: item.examCategory || "CBSE",
+      title: item.title || (chapter + " - " + topic + " (Q" + (idx + 1) + ")"),
+      questionText: item.questionText || item.title || "",
+      options: rawOpts,
+      optionsJson: item.optionsJson || JSON.stringify(rawOpts),
+      correctOptionIndex: Number(item.correctOptionIndex) || 0,
+      hint: item.hint || "",
+      explanation: item.explanation || "",
+      orderIndex: idx + 1,
+      isActive: true
+    };
+  });
+
+  return {
+    adminUserId: adminUserId,
+    contentType: "CurriculumQuizzes",
+    items: items
+  };
+}
+
+/**
+ * Main Backend Generator: generateCurriculumQuestionsWithGemini
+ * Full implementation satisfying Requirement R2.1, R2.3, R3.1-R3.3.
+ */
+function generateCurriculumQuestionsWithGemini(payload) {
+  const p = payload || {};
+  const adminUserId = p.adminUserId ? String(p.adminUserId).trim() : "";
+
+  // 1. RBAC Validation
+  const adminCheck = assertAdmin(adminUserId);
+  if (!adminCheck || !adminCheck.success) {
+    return adminCheck || { success: false, error: "UNAUTHORIZED: Admin privileges required.", code: 403 };
+  }
+
+  const model = p.model ? String(p.model).trim() : "gemini-1.5-flash";
+  const gradeClass = normalizeGrade(p.gradeClass || p.grade) || "Class 3";
+  const subject = p.subject ? String(p.subject).trim() : "General Science";
+  const chapter = p.chapter ? String(p.chapter).trim() : "General";
+  const topic = p.topic ? String(p.topic).trim() : "Core Concepts";
+  const questionType = p.questionType ? String(p.questionType).trim().toUpperCase() : "MCQ";
+  const quantity = Math.min(Math.max(Number(p.quantity) || 5, 1), 20);
+  const difficulty = p.difficulty ? String(p.difficulty).trim() : "Medium";
+  const bloomLevel = p.bloomLevel ? String(p.bloomLevel).trim() : "Applying";
+
+  // 2. Canonical Deduplication Cache Check
+  const fingerprint = computeGeminiCacheFingerprint(p);
+  if (!p.forceRefresh) {
+    const cachedData = getCachedGeminiResponse(fingerprint);
+    if (cachedData && Array.isArray(cachedData.items) && cachedData.items.length > 0) {
+      // Increment persistent cache hit counter in PropertiesService
+      const props = getScriptProperties_();
+      if (props && typeof props.getProperty === "function") {
+        try {
+          const currentHits = parseInt(props.getProperty("gemini_cache_hits_count") || "0", 10);
+          props.setProperty("gemini_cache_hits_count", String(currentHits + 1));
+        } catch (propErr) {}
+      }
+
+      // Record 0-token hit in Table 15 GeminiTokenLogs
+      recordGeminiTokenUsageLog({
+        adminUserId: adminUserId,
+        model: cachedData.model || model,
+        grade: gradeClass,
+        subject: subject,
+        topic: topic,
+        questionType: questionType,
+        quantity: cachedData.items.length,
+        promptTokens: 0,
+        candidateTokens: 0,
+        totalTokens: 0,
+        cachedFlag: true,
+        status: "SUCCESS",
+        latencyMs: 5
+      });
+
+      const rateStatus = checkAndIncrementRateLimit(model, false);
+
+      return {
+        success: true,
+        cached: true,
+        items: cachedData.items,
+        tokenUsage: {
+          promptTokens: 0,
+          candidateTokens: 0,
+          totalTokens: 0,
+          estimatedCostUsd: 0.0000
+        },
+        rateLimits: {
+          rpmRemaining: rateStatus.rpmRemaining,
+          dailyRemaining: rateStatus.dailyRemaining,
+          retryAfterSeconds: rateStatus.retryAfterSeconds || 0
+        }
+      };
+    }
+  }
+
+  // 3. Sliding-Window Rate Limiting (15 RPM / 1,500 RPD) - Consumes 1 quota token
+  const rateLimitDecision = checkAndIncrementRateLimit(model, true);
+  if (!rateLimitDecision.allowed) {
+    recordGeminiTokenUsageLog({
+      adminUserId: adminUserId,
+      model: model,
+      grade: gradeClass,
+      subject: subject,
+      topic: topic,
+      questionType: questionType,
+      quantity: quantity,
+      promptTokens: 0,
+      candidateTokens: 0,
+      totalTokens: 0,
+      cachedFlag: false,
+      status: "RATE_LIMITED",
+      latencyMs: 0
+    });
+
+    return {
+      success: false,
+      error: rateLimitDecision.error,
+      code: 429,
+      rateLimits: {
+        rpmRemaining: rateLimitDecision.rpmRemaining,
+        dailyRemaining: rateLimitDecision.dailyRemaining,
+        retryAfterSeconds: rateLimitDecision.retryAfterSeconds
+      }
+    };
+  }
+
+  // 4. API Key Resolution
+  let apiKey = "";
+  const props = getScriptProperties_();
+  if (props && typeof props.getProperty === "function") {
+    try { apiKey = props.getProperty("GEMINI_API_KEY"); } catch (e) {}
+  }
+  if (!apiKey && p.apiKey) {
+    apiKey = String(p.apiKey).trim();
+  }
+  if (!apiKey) {
+    return {
+      success: false,
+      error: "MISSING_API_KEY: Gemini API key not found in ScriptProperties ('GEMINI_API_KEY') or payload.apiKey.",
+      code: 401,
+      rateLimits: {
+        rpmRemaining: rateLimitDecision.rpmRemaining,
+        dailyRemaining: rateLimitDecision.dailyRemaining,
+        retryAfterSeconds: rateLimitDecision.retryAfterSeconds || 0
+      }
+    };
+  }
+
+  // 5. Prompt Compilation & generationConfig Formulation
+  const userPromptText = compileGeminiUserPrompt(p);
+  const requestBody = {
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: userPromptText }]
+      }
+    ],
+    systemInstruction: GEMINI_CBSE_SYSTEM_INSTRUCTION,
+    generationConfig: {
+      temperature: 0.2,
+      topP: 0.95,
+      topK: 40,
+      maxOutputTokens: 8192,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "ARRAY",
+        description: "List of curriculum assessment questions matching CBSE standards.",
+        items: {
+          type: "OBJECT",
+          properties: {
+            title: { type: "STRING", description: "Descriptive topic-aligned heading." },
+            questionText: { type: "STRING", description: "Clear question prompt." },
+            options: {
+              type: "ARRAY",
+              description: "Exactly 4 distinct, mutually exclusive answer choices.",
+              items: { type: "STRING" }
+            },
+            correctOptionIndex: { type: "INTEGER", description: "0-based index of correct option (0, 1, 2, or 3)." },
+            hint: { type: "STRING", description: "Pedagogical clue that assists recall without revealing the answer." },
+            explanation: { type: "STRING", description: "Comprehensive explanation of correct solution and distractor analysis." },
+            bloomLevel: { type: "STRING", description: "Remembering, Understanding, Applying, Analyzing, Evaluating, or Creating." },
+            difficulty: { type: "STRING", description: "Easy, Medium, or Hard." }
+          },
+          required: ["title", "questionText", "options", "correctOptionIndex", "hint", "explanation"]
+        }
+      }
+    }
+  };
+
+  // 6. Network Dispatch via UrlFetchApp with muteHttpExceptions: true
+  const httpResult = executeGeminiApiCall(model, apiKey, requestBody);
+
+  if (!httpResult.success) {
+    let apiErrMsg = httpResult.error || ("HTTP " + httpResult.statusCode);
+    if (httpResult.bodyText) {
+      try {
+        const errObj = JSON.parse(httpResult.bodyText);
+        if (errObj && errObj.error && errObj.error.message) {
+          apiErrMsg = errObj.error.message;
+        }
+      } catch (e) {}
+    }
+
+    recordGeminiTokenUsageLog({
+      adminUserId: adminUserId,
+      model: model,
+      grade: gradeClass,
+      subject: subject,
+      topic: topic,
+      questionType: questionType,
+      quantity: quantity,
+      promptTokens: 0,
+      candidateTokens: 0,
+      totalTokens: 0,
+      cachedFlag: false,
+      status: "ERROR",
+      latencyMs: httpResult.durationMs
+    });
+
+    return {
+      success: false,
+      error: "GEMINI_API_ERROR: " + apiErrMsg,
+      code: httpResult.statusCode || 500,
+      rateLimits: {
+        rpmRemaining: rateLimitDecision.rpmRemaining,
+        dailyRemaining: rateLimitDecision.dailyRemaining,
+        retryAfterSeconds: rateLimitDecision.retryAfterSeconds || 0
+      }
+    };
+  }
+
+  // 7. Defensive Parsing & Response Normalization
+  let responseObj = null;
+  try {
+    responseObj = JSON.parse(httpResult.bodyText);
+  } catch (jsonErr) {
+    return {
+      success: false,
+      error: "JSON_PARSE_ERROR: Failed to parse Gemini response body: " + (jsonErr ? jsonErr.message : ""),
+      code: 502,
+      rateLimits: {
+        rpmRemaining: rateLimitDecision.rpmRemaining,
+        dailyRemaining: rateLimitDecision.dailyRemaining,
+        retryAfterSeconds: rateLimitDecision.retryAfterSeconds || 0
+      }
+    };
+  }
+
+  // Token usage extraction from usageMetadata
+  const usage = (responseObj && responseObj.usageMetadata) ? responseObj.usageMetadata : {};
+  const promptTokens = Number(usage.promptTokenCount) || 0;
+  const candidateTokens = Number(usage.candidatesTokenCount) || 0;
+  const totalTokens = Number(usage.totalTokenCount) || (promptTokens + candidateTokens);
+
+  // Candidate extraction & finishReason verification
+  const candidate = (responseObj && Array.isArray(responseObj.candidates) && responseObj.candidates.length > 0)
+    ? responseObj.candidates[0]
+    : null;
+
+  if (!candidate) {
+    const blockReason = responseObj && responseObj.promptFeedback ? responseObj.promptFeedback.blockReason : null;
+    return {
+      success: false,
+      error: blockReason ? ("SAFETY_BLOCKED: Prompt blocked: " + blockReason) : "NO_CANDIDATES: Gemini returned 0 candidates.",
+      code: 422,
+      rateLimits: {
+        rpmRemaining: rateLimitDecision.rpmRemaining,
+        dailyRemaining: rateLimitDecision.dailyRemaining,
+        retryAfterSeconds: rateLimitDecision.retryAfterSeconds || 0
+      }
+    };
+  }
+
+  if (candidate.finishReason === "SAFETY") {
+    return {
+      success: false,
+      error: "SAFETY_BLOCKED: Candidate content was blocked by safety filters.",
+      code: 422,
+      rateLimits: {
+        rpmRemaining: rateLimitDecision.rpmRemaining,
+        dailyRemaining: rateLimitDecision.dailyRemaining,
+        retryAfterSeconds: rateLimitDecision.retryAfterSeconds || 0
+      }
+    };
+  }
+
+  let rawCandidateText = "";
+  if (candidate.content && Array.isArray(candidate.content.parts)) {
+    for (let partIdx = 0; partIdx < candidate.content.parts.length; partIdx++) {
+      if (candidate.content.parts[partIdx] && candidate.content.parts[partIdx].text) {
+        rawCandidateText += candidate.content.parts[partIdx].text;
+      }
+    }
+  }
+
+  const cleanJsonText = stripMarkdownFences(rawCandidateText);
+  let parsedItems = [];
+  try {
+    const rawParsed = JSON.parse(cleanJsonText);
+    if (Array.isArray(rawParsed)) {
+      parsedItems = rawParsed;
+    } else if (rawParsed && Array.isArray(rawParsed.items)) {
+      parsedItems = rawParsed.items;
+    } else if (rawParsed && Array.isArray(rawParsed.questions)) {
+      parsedItems = rawParsed.questions;
+    } else if (rawParsed && typeof rawParsed === "object") {
+      parsedItems = [rawParsed];
+    }
+  } catch (contentParseErr) {
+    return {
+      success: false,
+      error: "CONTENT_PARSE_ERROR: Candidate text is not valid JSON: " + (contentParseErr ? contentParseErr.message : ""),
+      code: 502,
+      rateLimits: {
+        rpmRemaining: rateLimitDecision.rpmRemaining,
+        dailyRemaining: rateLimitDecision.dailyRemaining,
+        retryAfterSeconds: rateLimitDecision.retryAfterSeconds || 0
+      }
+    };
+  }
+
+  // 8. Normalization, Distractor Integrity & CWE-1236 Sanitization
+  const normalizedItems = parsedItems.map(function(item, idx) {
+    const itemNumber = idx + 1;
+    const itemId = item.id || ("curr_" + Date.now() + "_" + itemNumber);
+    const rawTitle = item.title ? String(item.title).trim() : (chapter + " - " + topic + " (Q" + itemNumber + ")");
+    const rawQuestionText = item.questionText ? String(item.questionText).trim() : rawTitle;
+
+    // Distractor normalization: enforce exactly 4 options for MCQ
+    let options = [];
+    if (Array.isArray(item.options)) {
+      options = item.options.map(function(opt) {
+        return sanitizeSheetCellValue(String(opt || "").trim());
+      });
+    }
+    if (questionType === "MCQ") {
+      while (options.length < 4) {
+        options.push(sanitizeSheetCellValue("Option " + String.fromCharCode(65 + options.length)));
+      }
+      if (options.length > 4) {
+        options = options.slice(0, 4);
+      }
+    }
+
+    let correctIdx = Number(item.correctOptionIndex);
+    if (isNaN(correctIdx) || correctIdx < 0 || (options.length > 0 && correctIdx >= options.length)) {
+      correctIdx = 0;
+    }
+
+    const hint = item.hint ? sanitizeSheetCellValue(String(item.hint).trim()) : "";
+    const explanation = item.explanation ? sanitizeSheetCellValue(String(item.explanation).trim()) : "";
+
+    return {
+      id: itemId,
+      grade: gradeClass,
+      subject: subject,
+      chapter: chapter,
+      topic: topic,
+      title: sanitizeSheetCellValue(rawTitle),
+      questionText: sanitizeSheetCellValue(rawQuestionText),
+      options: options,
+      optionsJson: JSON.stringify(options),
+      correctOptionIndex: correctIdx,
+      hint: hint,
+      explanation: explanation,
+      bloomLevel: item.bloomLevel ? String(item.bloomLevel).trim() : bloomLevel,
+      difficulty: item.difficulty ? String(item.difficulty).trim() : difficulty,
+      examCategory: "CBSE"
+    };
+  });
+
+  // 9. Commit to Cache (6 hours TTL)
+  setCachedGeminiResponse(fingerprint, {
+    items: normalizedItems,
+    model: model,
+    promptTokens: promptTokens,
+    candidateTokens: candidateTokens,
+    totalTokens: totalTokens
+  }, 21600);
+
+  // 10. Record Metered Log in Table 15 GeminiTokenLogs
+  recordGeminiTokenUsageLog({
+    adminUserId: adminUserId,
+    model: model,
+    grade: gradeClass,
+    subject: subject,
+    topic: topic,
+    questionType: questionType,
+    quantity: normalizedItems.length,
+    promptTokens: promptTokens,
+    candidateTokens: candidateTokens,
+    totalTokens: totalTokens,
+    cachedFlag: false,
+    status: "SUCCESS",
+    latencyMs: httpResult.durationMs
+  });
+
+  // 11. Optional Storage Bridge via bulkUploadContentBatch
+  let bulkUploadResult = null;
+  if (p.autoCommit === true || p.commitToStorage === true) {
+    try {
+      const uploadPayload = transformGeneratedItemsForBulkUpload(adminUserId, { items: normalizedItems }, p);
+      bulkUploadResult = bulkUploadContentBatch(uploadPayload);
+    } catch (uploadErr) {
+      bulkUploadResult = { success: false, error: (uploadErr ? uploadErr.message : "Bulk upload failed") };
+    }
+  }
+
+  const responsePayload = {
+    success: true,
+    cached: false,
+    items: normalizedItems,
+    tokenUsage: {
+      promptTokens: promptTokens,
+      candidateTokens: candidateTokens,
+      totalTokens: totalTokens,
+      estimatedCostUsd: 0.0000
+    },
+    rateLimits: {
+      rpmRemaining: rateLimitDecision.rpmRemaining,
+      dailyRemaining: rateLimitDecision.dailyRemaining,
+      retryAfterSeconds: rateLimitDecision.retryAfterSeconds || 0
+    }
+  };
+
+  if (bulkUploadResult) {
+    responsePayload.bulkUploadResult = bulkUploadResult;
+  }
+
+  return responsePayload;
+}
+
+/**
+ * Interface Contract 2: Inspects current Gemini API quota telemetry,
+ * rate limit window counters (RPM/RPD), cumulative token consumption,
+ * and cache hit statistics.
+ *
+ * Guarded by assertAdmin(adminUserId).
+ *
+ * @param {Object} payload - { adminUserId: string, model?: string }
+ * @return {QuotaStatusResponse}
+ */
+function getGeminiQuotaStatus(payload) {
+  const p = payload || {};
+  const adminUserId = p.adminUserId ? String(p.adminUserId).trim() : "";
+  const adminCheck = assertAdmin(adminUserId);
+  if (!adminCheck || !adminCheck.success) {
+    return adminCheck || { success: false, error: "UNAUTHORIZED: Admin privileges required.", code: 403 };
+  }
+
+  const defaultModel = "gemini-1.5-flash";
+  const model = p.model ? String(p.model).trim() : defaultModel;
+
+  // Inspect rate limits (non-mutating)
+  const rateDecision = checkAndIncrementRateLimit(model, false);
+
+  // Cumulative telemetry from Table 15 GeminiTokenLogs
+  let totalTokensLogged = 0;
+  let totalCallsLogged = 0;
+  let cacheHitCount = 0;
+
+  try {
+    const logs = getSheetRecords("GeminiTokenLogs");
+    if (Array.isArray(logs)) {
+      totalCallsLogged = logs.length;
+      for (let i = 0; i < logs.length; i++) {
+        const row = logs[i];
+        totalTokensLogged += Number(row.totalTokens || 0);
+        const isCached = (row.cachedFlag === true || String(row.cachedFlag).toLowerCase() === "true" ||
+                         row.cached === true || String(row.cached).toLowerCase() === "true" ||
+                         row.isCached === true || String(row.isCached).toLowerCase() === "true") &&
+                        String(row.status || "").toUpperCase() === "SUCCESS";
+        if (isCached) {
+          cacheHitCount++;
+        }
+      }
+    }
+  } catch (sheetErr) {}
+
+  // Auxiliary Check for PropertiesService cache hit counter
+  const props = getScriptProperties_();
+  if (props && typeof props.getProperty === "function") {
+    try {
+      const propHits = props.getProperty("gemini_cache_hits_count");
+      if (propHits) {
+        cacheHitCount = Math.max(cacheHitCount, parseInt(propHits, 10) || 0);
+      }
+    } catch (propErr) {}
+  }
+
+  return {
+    success: true,
+    model: model,
+    rpmLimit: rateDecision.rpmLimit || 15,
+    rpmCurrent: rateDecision.rpmCurrent || 0,
+    rpmRemaining: rateDecision.rpmRemaining !== undefined ? rateDecision.rpmRemaining : Math.max(0, (rateDecision.rpmLimit || 15) - (rateDecision.rpmCurrent || 0)),
+    rpdLimit: rateDecision.rpdLimit || 1500,
+    rpdCurrent: rateDecision.rpdCurrent || 0,
+    rpdRemaining: rateDecision.dailyRemaining !== undefined ? rateDecision.dailyRemaining : Math.max(0, (rateDecision.rpdLimit || 1500) - (rateDecision.rpdCurrent || 0)),
+    totalTokensLogged: totalTokensLogged,
+    totalCallsLogged: totalCallsLogged,
+    cacheHitCount: cacheHitCount
+  };
+}
+
 // -------------------------------------------------------------------------
 // Node.js Module Export for Local Automated Verification
 // -------------------------------------------------------------------------
@@ -3971,6 +5141,23 @@ if (typeof module !== "undefined" && module.exports) {
     recordQuestionResponses,
     getStudentAnswerSheet,
     getNextPersonalizedCurriculum,
-    bulkUploadContentBatch
+    bulkUploadContentBatch,
+    // Milestone 2 Additions:
+    generateCurriculumQuestionsWithGemini,
+    getGeminiQuotaStatus,
+    checkAndIncrementRateLimit,
+    recordGeminiTokenUsageLog,
+    computeGeminiCacheFingerprint,
+    computeGeminiRequestFingerprint,
+    getCachedGeminiResponse,
+    setCachedGeminiResponse,
+    stripMarkdownFences,
+    transformGeneratedItemsForBulkUpload,
+    executeGeminiApiCall,
+    getScriptCache_,
+    getScriptProperties_,
+    getUrlFetchApp_,
+    _inMemoryScriptCache,
+    _inMemoryScriptProperties
   };
 }
