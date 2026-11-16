@@ -3,5 +3,6 @@
 
 # Only include Google Apps Script files
 !google_apps_script_backend.js
+!curriculum_catalog_data.js
 !divyank_mission_control_google_apps_script_app.html
 !appsscript.json

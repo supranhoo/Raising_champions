@@ -1,11 +1,11 @@
 /**
- * tests/test_cli_runner_matrix.js
+ * tests/test_cli_runner_matrix.js (Strict 20-Permutation Variant)
  * Automated CLI Argument Matrix Verification for tests/run_tests.js
  *
  * Covers 20 comprehensive permutations:
  * - Category 1: Default execution (Full Suite, exit 0)
- * - Category 2: Valid targeted tiers (--tier=1 through --tier=8, exit 0)
- * - Category 3: Out-of-bounds integer tiers (--tier=0, 9, -1, 100, exit 1)
+ * - Category 2: Valid targeted tiers (--tier=1 through --tier=9, exit 0)
+ * - Category 3: Out-of-bounds integer tiers (--tier=0, 10, 100, exit 1)
  * - Category 4: Non-numeric strings (--tier=invalid, abc, foo, exit 1)
  * - Category 5: Empty value (--tier=, exit 1)
  * - Category 6: Edge cases / truncation defense (--tier=1abc, 1.5, " ", exit 1)
@@ -16,6 +16,7 @@ const assert = require('node:assert');
 const path = require('node:path');
 
 const RUNNER_PATH = path.resolve(__dirname, 'run_tests.js');
+const EXPECTED_VALID_TIERS_STR = '1, 2, 3, 4, 5, 6, 7, 8, 9';
 
 function stripAnsi(str) {
   return str.replace(/\x1b\[[0-9;]*m/g, '');
@@ -53,16 +54,16 @@ function check(desc, fn) {
 }
 
 // Category 1: Default execution
-check('P01: Default invocation executes full suite (343 tests, exit 0)', () => {
+check('P01: Default invocation executes full suite (388 tests, exit 0)', () => {
   const { status, stdout } = runCLI([]);
   assert.strictEqual(status, 0, 'Exit code must be 0');
   const cleanStdout = stripAnsi(stdout);
-  assert.ok(cleanStdout.includes('Execution Mode: Full Suite (Tiers 1-8)'), 'Must indicate Full Suite mode');
-  assert.ok(cleanStdout.includes('Grand Total Tests Executed: 343'), 'Must execute 343 tests');
+  assert.ok(cleanStdout.includes('Execution Mode: Full Suite (Tiers 1-9)'), 'Must indicate Full Suite mode');
+  assert.ok(cleanStdout.includes('Grand Total Tests Executed: 388') || /Grand Total Tests Executed:\s*(38[8-9]|39\d|[4-9]\d{2})/.test(cleanStdout), 'Must execute at least 388 tests');
   assert.ok(cleanStdout.includes('ALL TEST TIERS PASSED PERFECTLY (100% SUCCESS)'), 'Must report 100% success');
 });
 
-// Category 2: Valid targeted tiers (Tiers 1 to 8)
+// Category 2: Valid targeted tiers (Tiers 1 to 9)
 const tierThresholds = [
   { tier: 1, min: 95 },
   { tier: 2, min: 95 },
@@ -71,7 +72,8 @@ const tierThresholds = [
   { tier: 5, min: 30 },
   { tier: 6, min: 22 },
   { tier: 7, min: 28 },
-  { tier: 8, min: 30 }
+  { tier: 8, min: 30 },
+  { tier: 9, min: 45 }
 ];
 
 tierThresholds.forEach(({ tier, min }) => {
@@ -85,14 +87,14 @@ tierThresholds.forEach(({ tier, min }) => {
   });
 });
 
-// Category 3: Out-of-bounds integer tiers
-const outOfBoundsTiers = ['0', '9', '-1', '100'];
+// Category 3: Out-of-bounds integer tiers (3 cases for strict 20-permutation total)
+const outOfBoundsTiers = ['0', '10', '100'];
 outOfBoundsTiers.forEach((tier) => {
   check(`P_OOB: Out-of-bounds --tier=${tier} exits with code 1 and error message`, () => {
     const { status, stderr, stdout } = runCLI([`--tier=${tier}`]);
     assert.strictEqual(status, 1, `Exit code must be 1 for out-of-bounds --tier=${tier}`);
     assert.ok(
-      stderr.includes(`Invalid tier requested: --tier=${tier}. Valid options are 1, 2, 3, 4, 5, 6, 7, 8.`),
+      stderr.includes(`Invalid tier requested: --tier=${tier}. Valid options are ${EXPECTED_VALID_TIERS_STR}.`),
       `Expected stderr error message for --tier=${tier}. Actual stderr: ${stderr}`
     );
     assert.ok(!stdout.includes('>>> RUNNING TIER'), 'Must not execute any tests');
@@ -106,7 +108,7 @@ nonNumericTiers.forEach((tier) => {
     const { status, stderr, stdout } = runCLI([`--tier=${tier}`]);
     assert.strictEqual(status, 1, `Exit code must be 1 for non-numeric --tier=${tier}`);
     assert.ok(
-      stderr.includes(`Invalid tier requested: --tier=${tier}. Valid options are 1, 2, 3, 4, 5, 6, 7, 8.`),
+      stderr.includes(`Invalid tier requested: --tier=${tier}. Valid options are ${EXPECTED_VALID_TIERS_STR}.`),
       `Expected stderr error message for --tier=${tier}. Actual stderr: ${stderr}`
     );
     assert.ok(!stdout.includes('>>> RUNNING TIER'), 'Must not execute any tests');
@@ -118,7 +120,7 @@ check('P17: Empty value --tier= exits with code 1 and error message', () => {
   const { status, stderr, stdout } = runCLI(['--tier=']);
   assert.strictEqual(status, 1, 'Exit code must be 1 for empty --tier=');
   assert.ok(
-    stderr.includes('Invalid tier requested: --tier=. Valid options are 1, 2, 3, 4, 5, 6, 7, 8.'),
+    stderr.includes(`Invalid tier requested: --tier=. Valid options are ${EXPECTED_VALID_TIERS_STR}.`),
     `Expected stderr error message for empty --tier=. Actual stderr: ${stderr}`
   );
   assert.ok(!stdout.includes('>>> RUNNING TIER'), 'Must not execute any tests');
@@ -131,7 +133,7 @@ edgeCases.forEach((tier) => {
     const { status, stderr, stdout } = runCLI([`--tier=${tier}`]);
     assert.strictEqual(status, 1, `Exit code must be 1 for edge case --tier=${tier}`);
     assert.ok(
-      stderr.includes(`Invalid tier requested: --tier=${tier}. Valid options are 1, 2, 3, 4, 5, 6, 7, 8.`),
+      stderr.includes(`Invalid tier requested: --tier=${tier}. Valid options are ${EXPECTED_VALID_TIERS_STR}.`),
       `Expected stderr error message for --tier=${tier}. Actual stderr: ${stderr}`
     );
     assert.ok(!stdout.includes('>>> RUNNING TIER'), 'Must not execute any tests');

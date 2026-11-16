@@ -3,7 +3,7 @@
  * =========================================================================
  * ZOPTRO AUTOMATED E2E TEST RUNNER
  * =========================================================================
- * Master test executor for Tiers 1 through 6:
+ * Master test executor for Tiers 1 through 9:
  * - Tier 1: Feature Coverage (Features 1-19, >=5 tests per feature)
  * - Tier 2: Boundary & Corner Cases (Features 1-19, >=5 tests per feature)
  * - Tier 3: Pairwise Combinatorial Tests (>=19 tests)
@@ -12,6 +12,7 @@
  * - Tier 6: 1-to-N Multi-Child Frontend SPA & Parent HQ (>=22 tests)
  * - Tier 7: Milestone 6 Landing Page & Global Navigation (>=28 tests)
  * - Tier 8: Gemini Content Generation & Quota Controls (>=30 tests)
+ * - Tier 9: CBSE/NCERT Curriculum Catalog & Studio UI Integration (>=45 tests)
  *
  * Usage:
  *   node tests/run_tests.js
@@ -23,6 +24,9 @@
  *   node tests/run_tests.js --tier=6
  *   node tests/run_tests.js --tier=7
  *   node tests/run_tests.js --tier=8
+ *   node tests/run_tests.js --tier=9
+ *   node tests/run_tests.js --verbose
+ *   node tests/run_tests.js --help
  */
 
 const path = require('node:path');
@@ -33,11 +37,30 @@ async function main() {
   let requestedTier = null;
   let tierArgProvided = false;
   let rawTierValue = '';
+  let verbose = true;
 
   for (const arg of args) {
     if (arg.startsWith('--tier=')) {
       tierArgProvided = true;
       rawTierValue = arg.slice('--tier='.length);
+    } else if (arg === '--verbose') {
+      verbose = true;
+    } else if (arg === '--quiet' || arg === '--silent') {
+      verbose = false;
+    } else if (arg === '--help' || arg === '-h') {
+      console.log(`
+Zoptro Automated E2E Test Suite Runner
+
+Usage:
+  node tests/run_tests.js [options]
+
+Options:
+  --tier=N       Run only targeted tier N (1 to 9)
+  --verbose      Display detailed test progress and assertions (default)
+  --quiet        Suppress individual test logs and show summary only
+  --help, -h     Display this help message and exit
+`);
+      process.exit(0);
     }
   }
 
@@ -49,7 +72,8 @@ async function main() {
     { tier: 5, name: 'Tier 5: 1-to-N Multi-Child Backend & State Isolation', file: './test_multichild_backend_and_isolation.js', minExpected: 30 },
     { tier: 6, name: 'Tier 6: 1-to-N Multi-Child Frontend SPA & Parent HQ', file: './test_multichild_frontend_hq.js', minExpected: 22 },
     { tier: 7, name: 'Tier 7: Milestone 6 Landing Page & Global Navigation', file: './test_milestone6_landing_page.js', minExpected: 28 },
-    { tier: 8, name: 'Tier 8: Gemini Content Generation & Quota Controls', file: './test_gemini_content_generation.js', minExpected: 30 }
+    { tier: 8, name: 'Tier 8: Gemini Content Generation & Quota Controls', file: './test_gemini_content_generation.js', minExpected: 30 },
+    { tier: 9, name: 'Tier 9: CBSE/NCERT Curriculum Catalog & Studio UI Integration', file: './test_curriculum_catalog.js', minExpected: 45 }
   ];
 
   const validTierStrings = allTiers.map(t => String(t.tier));
@@ -70,7 +94,7 @@ async function main() {
   console.log('\x1b[1m\x1b[34m=========================================================================\x1b[0m');
   console.log('\x1b[1m\x1b[37m  ZOPTRO AUTOMATED E2E TEST SUITE RUNNER (OPAQUE-BOX VERIFICATION)\x1b[0m');
   console.log('\x1b[1m\x1b[34m=========================================================================\x1b[0m');
-  console.log(`Execution Mode: ${requestedTier !== null ? `Targeted Tier ${requestedTier}` : 'Full Suite (Tiers 1-8)'}`);
+  console.log(`Execution Mode: ${requestedTier !== null ? `Targeted Tier ${requestedTier}` : 'Full Suite (Tiers 1-9)'}`);
   console.log(`Target Directory: ${path.resolve(__dirname)}`);
   console.log('Timestamp:', new Date().toISOString());
 
@@ -91,7 +115,7 @@ async function main() {
       process.exit(1);
     }
 
-    const { stats, results } = await registry.run({ verbose: true });
+    const { stats, results } = await registry.run({ verbose });
 
     tierSummaries.push({
       tier: tierConfig.tier,
@@ -125,16 +149,18 @@ async function main() {
 
     if (!thresholdMet) allThresholdsMet = false;
 
-    console.log(`  • ${sum.name.padEnd(52)} : ${passedStr} (total ${sum.total}) in ${sum.durationMs}ms ${thresholdStr}`);
+    console.log(`  • ${sum.name.padEnd(62)} : ${passedStr} (total ${sum.total}) in ${sum.durationMs}ms ${thresholdStr}`);
   }
 
+  // Grand total threshold invariant defense: Milestone 3 requires >=388 tests (historical baselines: >=268, >=296, >=326 tests)
+  const MIN_GRAND_TOTAL_TESTS = 388; // Historical invariant: 326
   console.log('-------------------------------------------------------------------------');
-  console.log(`Grand Total Tests Executed: \x1b[1m${grandTotalTests}\x1b[0m (Threshold: >=326 tests)`);
+  console.log(`Grand Total Tests Executed: \x1b[1m${grandTotalTests}\x1b[0m (Threshold: >=${MIN_GRAND_TOTAL_TESTS} tests; historical: >=326)`);
   console.log(`Total Passed: \x1b[1m\x1b[32m${grandTotalPassed}\x1b[0m`);
   console.log(`Total Failed: \x1b[1m${grandTotalFailed === 0 ? '\x1b[32m0\x1b[0m' : `\x1b[31m${grandTotalFailed}\x1b[0m`}`);
   console.log(`Execution Time: ${grandTotalDuration}ms`);
 
-  const passed = grandTotalFailed === 0 && allThresholdsMet && (requestedTier !== null || grandTotalTests >= 326);
+  const passed = grandTotalFailed === 0 && allThresholdsMet && (requestedTier !== null || grandTotalTests >= MIN_GRAND_TOTAL_TESTS);
 
   if (passed) {
     console.log('\n\x1b[1m\x1b[42m\x1b[30m  ALL TEST TIERS PASSED PERFECTLY (100% SUCCESS)  \x1b[0m\n');
