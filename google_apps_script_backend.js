@@ -1203,7 +1203,12 @@ function verifyRolePin(payload) {
 
   // If switching to admin mode, verify admin's PIN/password
   if (targetRole === "admin" || userId === "u_adm_demo") {
-    const isMasterAdminPin = (hashed === hashSecret("9999") || hashed === hashSecret("adminPass123") || hashed === hashSecret("admin123") || pin === "9999" || pin === "adminPass123" || pin === "admin123");
+    let customAdminPin = "";
+    try {
+      customAdminPin = PropertiesService.getScriptProperties().getProperty("ADMIN_PIN") || "";
+    } catch (e) {}
+    const isMasterAdminPin = (customAdminPin && (pin === customAdminPin || hashed === hashSecret(customAdminPin))) ||
+      (!customAdminPin && (hashed === hashSecret("9999") || hashed === hashSecret("adminPass123") || hashed === hashSecret("admin123") || pin === "9999" || pin === "adminPass123" || pin === "admin123"));
     if (isMasterAdminPin) {
       ensureAdminUserInSheet();
       return { success: true, verified: true, verifiedRole: "admin" };

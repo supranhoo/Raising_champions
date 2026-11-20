@@ -451,7 +451,7 @@
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <span class="bg-[#1C5682] text-white text-[10px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded-none">
-                PIN: 1234
+                PIN Protected 🔒
               </span>
               <span class="text-2xl" aria-hidden="true">🛡️</span>
             </div>
@@ -459,7 +459,7 @@
               Parent Space / HQ
             </h2>
             <p class="text-xs text-[#666D57] font-sans leading-normal">
-              Monitor children's daily habit completion, verify submitted quests, inspect longitudinal growth analytics across academic &amp; EQ dimensions, and adjust permissions (PIN: 1234).
+              Monitor children's daily habit completion, verify submitted quests, inspect longitudinal growth analytics across academic &amp; EQ dimensions, and adjust permissions with secure parent authentication.
             </p>
             <ul class="text-xs text-[#09293D] space-y-1.5 pt-2 border-t border-[#DED9D3] font-sans">
               <li class="flex items-center gap-1.5 font-medium"><span class="text-[#1C5682] font-bold">✔</span> Multi-Child Switcher (&lt;10ms)</li>
@@ -469,7 +469,7 @@
             </ul>
           </div>
           <button id="landingBtnParentPortal" onclick="enterParentPortal()" class="w-full py-3 bg-[#09293D] hover:bg-[#1C5682] text-white font-bold font-sans text-xs uppercase tracking-wider rounded-none border border-[#09293D] transition shadow-none cursor-pointer flex items-center justify-center space-x-2">
-            <span>Enter Parent Space (PIN: 1234) →</span>
+            <span>Enter Parent Space →</span>
           </button>
         </div>
 
@@ -478,7 +478,7 @@
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <span class="bg-[#666D57] text-white text-[10px] font-sans font-bold uppercase tracking-wider px-2 py-0.5 rounded-none">
-                Admin (PIN: 9999)
+                Restricted Access 🛡️
               </span>
               <span class="text-2xl" aria-hidden="true">⚙️</span>
             </div>
@@ -486,7 +486,7 @@
               Admin Mission Control &amp; CMS
             </h2>
             <p class="text-xs text-[#666D57] font-sans leading-normal">
-              Direct curriculum management with dynamic CMS. Create, edit, publish, and toggle active/inactive status of educational content with LockService concurrency (PIN: 9999).
+              Direct curriculum management with dynamic CMS. Create, edit, publish, and toggle active/inactive status of educational content with LockService concurrency.
             </p>
             <ul class="text-xs text-[#09293D] space-y-1.5 pt-2 border-t border-[#DED9D3] font-sans">
               <li class="flex items-center gap-1.5 font-medium"><span class="text-[#666D57] font-bold">✔</span> Stories &amp; Question Editors</li>
@@ -496,7 +496,7 @@
             </ul>
           </div>
           <button id="landingBtnAdminPortal" onclick="openAdminPinPrompt()" class="w-full py-3 bg-[#666D57] hover:bg-[#09293D] text-white font-bold font-sans text-xs uppercase tracking-wider rounded-none border border-[#09293D] transition shadow-none cursor-pointer flex items-center justify-center space-x-2">
-            <span>Administrator Access (PIN: 9999) →</span>
+            <span>Administrator Access →</span>
           </button>
         </div>
 
@@ -2602,7 +2602,7 @@
             <span>👨‍👩‍👧‍👦 New Family Sign-Up (Parent + Children)</span>
           </button>
           <button type="button" onclick="closeAuthModal(); openAdminPinPrompt();" id="btnAdminSignInFromModal" class="w-full py-2 bg-white hover:bg-[#F4F2EA] text-[#09293D] font-bold text-xs rounded-none border border-[#DED9D3] transition flex items-center justify-center gap-1.5" title="Access Admin Mission Control">
-            <span>🛡️ Administrator Access (PIN: 9999)</span>
+            <span>🛡️ Administrator Access</span>
           </button>
         </div>
       </div>
@@ -2620,7 +2620,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs uppercase font-bold text-[#666D57] mb-1">4+ Digit PIN</label>
-            <input type="password" id="parentSignUpPin" placeholder="e.g. 1234" maxlength="8" class="w-full bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] focus:outline-none focus:border-[#09293D] font-mono">
+            <input type="password" id="parentSignUpPin" placeholder="4-digit PIN" maxlength="8" class="w-full bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] focus:outline-none focus:border-[#09293D] font-mono">
           </div>
           <div>
             <label class="block text-xs uppercase font-bold text-[#666D57] mb-1">Password (6+ Chars)</label>
@@ -2679,7 +2679,7 @@
         <p class="text-xs text-[#666D57] mt-1">Enter your parent PIN or password to continue.</p>
       </div>
       <div>
-        <input type="password" id="parentSwitchPin" placeholder="Enter PIN (e.g. 1234)" maxlength="16" class="w-full bg-[#F9F8F3] border-2 border-[#09293D] rounded-none px-3 py-2.5 text-[#09293D] font-mono font-bold text-center text-lg tracking-widest focus:outline-none">
+        <input type="password" id="parentSwitchPin" placeholder="Enter Parent PIN / Password" maxlength="16" class="w-full bg-[#F9F8F3] border-2 border-[#09293D] rounded-none px-3 py-2.5 text-[#09293D] font-mono font-bold text-center text-lg tracking-widest focus:outline-none">
         <div id="parentSwitchPinError" class="hidden text-xs text-[#D80707] font-bold mt-1"></div>
       </div>
       <div class="space-y-2 pt-1">
@@ -3318,7 +3318,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label for="onboarding-parent-pin" class="block uppercase font-bold text-[#666D57] mb-1">Parent PIN (4+ Digits) *</label>
-            <input type="password" id="onboarding-parent-pin" maxlength="8" placeholder="4+ digits (e.g. 1234)" class="w-full bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] font-mono font-bold focus:outline-none focus:border-[#09293D]">
+            <input type="password" id="onboarding-parent-pin" maxlength="8" placeholder="4+ numeric digits" class="w-full bg-[#F9F8F3] border border-[#DED9D3] rounded-none px-3 py-2 text-[#09293D] font-mono font-bold focus:outline-none focus:border-[#09293D]">
           </div>
           <div>
             <label for="onboarding-parent-password" class="block uppercase font-bold text-[#666D57] mb-1">Password (6+ Chars) *</label>
@@ -13473,7 +13473,7 @@ const ZoptroApiClient = {
         return false;
       }
       if (!pPin || !/^\d{4,}$/.test(pPin)) {
-        showOnboardingError("Parent PIN must be at least 4 numeric digits (e.g. 1234).");
+        showOnboardingError("Parent PIN must be at least 4 numeric digits.");
         const el = document.getElementById('onboarding-parent-pin');
         if (el) el.focus();
         return false;

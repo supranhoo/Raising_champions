@@ -82,7 +82,9 @@ describe('Tier 7: Milestone 6 Landing Page & Global Navigation (28 Tests)', () =
       assert.ok(htmlContent.includes('id="landingCardParent"'), '#landingCardParent must exist');
       assert.ok(htmlContent.includes('id="landingBtnParentPortal"'), '#landingBtnParentPortal must exist');
       assert.ok(/Parent Space|Parent HQ/i.test(htmlContent), 'Parent space heading must be present');
-      assert.ok(/1234/i.test(htmlContent), 'Parent card must mention PIN 1234');
+      assert.ok(/PIN Protected|Parent PIN/i.test(htmlContent), 'Parent card must indicate secure PIN protection');
+      assert.ok(!/Enter Parent Space \(PIN:/i.test(htmlContent), 'Parent CTA button must not expose plaintext credentials');
+      assert.ok(!/Administrator Access \(PIN:/i.test(htmlContent), 'Admin CTA button must not expose plaintext credentials');
     });
 
     test('M6-DOM-06: Role Card 3 - Admin Mission Control card #landingCardAdmin and prominent CTA #landingBtnAdminPortal exist', () => {
