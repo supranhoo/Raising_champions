@@ -9525,13 +9525,18 @@ const ZoptroApiClient = {
           targetGrade: studentGrade
         }).then(function(res) {
           isNewsLoaded = true;
-          if (res && res.success && Array.isArray(res.items) && res.items.length > 0) {
-            currentNewsData = res.items.map((item, idx) => ({
+          // Only overwrite default news if server returns actual long-form news stories/articles
+          const validNewsItems = (res && res.success && Array.isArray(res.items))
+            ? res.items.filter(item => item.story || item.content || item.summary || (item.article && item.article.length > 50))
+            : [];
+
+          if (validNewsItems.length > 0) {
+            currentNewsData = validNewsItems.map((item, idx) => ({
               id: idx,
               title: item.factTitle || item.topic || ('News Digest ' + (idx + 1) + ': ' + (item.topic || 'Current Affairs')),
               category: (item.domain === 'national' || item.domain === 'National') ? 'National Affairs 🇮🇳' : 'Global Discovery 🌐',
               eli10: 'ELI10: ' + (item.factExplanation || item.didYouKnowFact || item.fact || 'Fascinating educational discovery verified for young minds!'),
-              body: item.story || item.content || item.summary || ((item.didYouKnowFact ? (item.didYouKnowFact + ' ') : '') + (item.questionText || item.question || item.q || 'Knowledge digest exploring real-world innovations and history.')),
+              body: item.story || item.content || item.summary || item.article,
               quiz: {
                 q: item.questionText || item.question || item.q || 'What did you learn from this digest?',
                 opts: Array.isArray(item.options) ? item.options : (item.optionsJson ? (function() { try { return JSON.parse(item.optionsJson); } catch (e) { return ['Option A', 'Option B', 'Option C', 'Option D']; } })() : ['Option A', 'Option B', 'Option C', 'Option D']),
@@ -9540,36 +9545,8 @@ const ZoptroApiClient = {
               }
             }));
           } else {
-            if (typeof BrowserMockBackend !== 'undefined' && BrowserMockBackend.KEYS) {
-              const all = BrowserMockBackend._getTable(BrowserMockBackend.KEYS.DAILY_KNOWLEDGE);
-              const matching = all.filter(d => {
-                const g = BrowserMockBackend._normalizeGrade ? BrowserMockBackend._normalizeGrade(d.grade || d.gradeClass) : (d.grade || d.gradeClass);
-                const isActive = String(d.isActive).toUpperCase() === 'TRUE' || d.isActive === true;
-                return g === studentGrade && isActive;
-              });
-              if (matching.length > 0) {
-                currentNewsData = matching.map((item, idx) => {
-                  const opts = Array.isArray(item.options) ? item.options : (item.optionsJson ? (function() { try { return JSON.parse(item.optionsJson); } catch (e) { return ['Option A', 'Option B', 'Option C', 'Option D']; } })() : ['Option A', 'Option B', 'Option C', 'Option D']);
-                  return {
-                    id: idx,
-                    title: item.topic ? (item.domain ? (item.domain + ': ' + item.topic) : item.topic) : ('News Digest ' + (idx + 1)),
-                    category: (item.domain === 'National' || item.domain === 'national') ? 'National Affairs 🇮🇳' : 'Global Discovery 🌐',
-                    eli10: 'ELI10: ' + (item.didYouKnowFact || item.factExplanation || item.fact || 'Fascinating educational discovery verified for young minds!'),
-                    body: (item.didYouKnowFact ? (item.didYouKnowFact + ' ') : '') + (item.questionText || item.question || item.q || 'Curriculum discovery exploring science, history, and innovation.'),
-                    quiz: {
-                      q: item.questionText || item.question || item.q || 'What did you learn from this digest?',
-                      opts: opts,
-                      correct: item.correctOptionIndex !== undefined ? Number(item.correctOptionIndex) : (item.correctAnswerIndex !== undefined ? Number(item.correctAnswerIndex) : 0),
-                      fact: item.didYouKnowFact || item.factExplanation || item.fact || 'Knowledge fact recall.'
-                    }
-                  };
-                });
-              } else {
-                currentNewsData = DEFAULT_JUNIOR_NEWS;
-              }
-            } else {
-              currentNewsData = DEFAULT_JUNIOR_NEWS;
-            }
+            // Keep the rich authentic Junior News digests (National Symbols, ISRO Missions, Human Body)
+            currentNewsData = DEFAULT_JUNIOR_NEWS;
           }
           renderNewsPills();
           loadNewsArticle(currentNewsIndex || 0);
