@@ -1061,20 +1061,17 @@
       <!-- STAGE 1: READ ARTICLE PANEL (VISIBLE FIRST) -->
       <div id="caReadingStage" class="bg-white border border-[#D9E6EB] rounded-none p-6 space-y-4 font-sans">
         <div class="flex items-center justify-between border-b border-[#D9E6EB] pb-3 flex-wrap gap-2">
-          <h3 class="text-base sm:text-lg font-display font-bold text-[#09293D]" id="newsTitle">Loading Junior News Digest...</h3>
+          <h3 class="text-base sm:text-lg font-display font-bold text-[#09293D]" id="newsTitle">News Digest 1: National Symbols</h3>
           <span class="text-xs bg-[#D9E6EB] text-[#09293D] px-2.5 py-0.5 rounded-none border border-[#1C5682] font-bold"> Active Reading Mode</span>
         </div>
 
         <div class="p-3.5 rounded-none bg-[#F9F8F3] border-l-4 border-[#1C5682] text-xs text-[#1C5682] leading-relaxed" id="newsEli10">
-          <div class="animate-pulse h-4 bg-[#DED9D3] rounded-none w-3/4"></div>
+          ELI10: Project Tiger is a wildlife conservation effort started in 1973 to save Bengal tigers and their forest homes.
         </div>
 
-        <p class="text-xs sm:text-sm text-[#09293D] leading-relaxed font-sans" id="newsBody">
-          <div class="animate-pulse space-y-2">
-            <div class="h-4 bg-[#DED9D3] rounded-none w-full"></div>
-            <div class="h-4 bg-[#DED9D3] rounded-none w-5/6"></div>
-          </div>
-        </p>
+        <div class="text-xs sm:text-sm text-[#09293D] leading-relaxed font-sans" id="newsBody">
+          The Royal Bengal Tiger is the national animal of India, renowned for its strength, grace, and agility. In 1973, India launched 'Project Tiger' to establish dedicated tiger reserves and protect these majestic big cats from extinction. Today, India is home to over 70% of the world's wild tiger population, thriving across protected national parks and sanctuaries.
+        </div>
 
         <div class="p-3 rounded-none bg-[#F4F2EA] border-l-4 border-[#F65800] text-xs text-[#09293D]">
            <strong>Memory Tip:</strong> Pay attention to names, numbers, and facts! When you click below, the article hides to test your retention.
@@ -8300,6 +8297,7 @@ const ZoptroApiClient = {
         }
       } else if (tabId === 'dashboard') {
         renderHabits();
+        renderWeeklyGrid();
       } else if (tabId === 'vault') {
         renderRewardsCatalog();
       } else if (tabId === 'dailygk') {
@@ -9461,10 +9459,62 @@ const ZoptroApiClient = {
     // ==========================================
     // DYNAMIC JUNIOR CURRENT AFFAIRS MODULE
     // ==========================================
-    var currentNewsData = [];
+    // DYNAMIC JUNIOR CURRENT AFFAIRS & DISCOVERY DIGESTS
+    // ==========================================
+    const DEFAULT_JUNIOR_NEWS = [
+      {
+        id: 0,
+        title: 'News Digest 1: National Symbols',
+        category: 'National Affairs 🇮🇳',
+        eli10: 'ELI10: Project Tiger is a wildlife conservation effort started in 1973 to save Bengal tigers and their forest homes.',
+        body: "The Royal Bengal Tiger is the national animal of India, renowned for its strength, grace, and agility. In 1973, India launched 'Project Tiger' to establish dedicated tiger reserves and protect these majestic big cats from extinction. Today, India is home to over 70% of the world's wild tiger population, thriving across protected national parks and sanctuaries.",
+        quiz: {
+          q: 'What is the national animal of India?',
+          opts: ['Lion', 'Royal Bengal Tiger', 'Elephant', 'Leopard'],
+          correct: 1,
+          fact: 'Project Tiger was launched in 1973 to protect endangered Bengal tigers.'
+        }
+      },
+      {
+        id: 1,
+        title: 'News Digest 2: ISRO Missions',
+        category: 'Space Exploration 🚀',
+        eli10: 'ELI10: India is the very first country to land a spacecraft near the Moon\'s South Pole!',
+        body: "On August 23, 2023, the Indian Space Research Organisation (ISRO) made history with Chandrayaan-3, successfully landing the Vikram lander near the lunar south pole. India became only the fourth nation to soft-land on the Moon and the first to reach the rugged south polar region, where water ice and minerals are being studied by the Pragyan rover.",
+        quiz: {
+          q: 'Which Indian lunar exploration mission successfully landed near the Moon\'s South Pole?',
+          opts: ['Chandrayaan-1', 'Chandrayaan-2', 'Chandrayaan-3', 'Mangalyaan'],
+          correct: 2,
+          fact: 'India became the first nation to soft-land near the lunar south pole on August 23, 2023.'
+        }
+      },
+      {
+        id: 2,
+        title: 'News Digest 3: Human Body',
+        category: 'Human Biology 🧬',
+        eli10: 'ELI10: Your heart works 24/7 like an automatic pump to send oxygen to every muscle and organ!',
+        body: "The human heart is an incredible muscular organ that works without stopping day and night. It pumps oxygen-rich blood through thousands of kilometers of blood vessels to every part of your body. In an average person, the heart beats around 100,000 times every day, delivering vital nutrients to keep all cells healthy and strong.",
+        quiz: {
+          q: 'Which organ pumps blood throughout the entire human body?',
+          opts: ['Lungs', 'Brain', 'Heart', 'Stomach'],
+          correct: 2,
+          fact: 'An average human heart beats around 100,000 times a day.'
+        }
+      }
+    ];
+
+    var currentNewsData = DEFAULT_JUNIOR_NEWS;
     var currentNewsIndex = 0;
+    var isNewsLoaded = false;
 
     function loadDynamicNews() {
+      // 1. Immediately render cached/default news so page paints in 0ms!
+      renderNewsPills();
+      loadNewsArticle(currentNewsIndex || 0);
+
+      // If already fetched during this session, don't refetch
+      if (isNewsLoaded) return;
+
       const studentId = getActiveStudentId();
       const studentGrade = getActiveStudentGrade();
 
@@ -9474,18 +9524,19 @@ const ZoptroApiClient = {
           contentType: 'daily_knowledge',
           targetGrade: studentGrade
         }).then(function(res) {
+          isNewsLoaded = true;
           if (res && res.success && Array.isArray(res.items) && res.items.length > 0) {
             currentNewsData = res.items.map((item, idx) => ({
               id: idx,
-              title: item.factTitle || ('News Digest ' + (idx + 1) + ': ' + (item.topic || 'Current Affairs')),
-              category: item.domain === 'national' ? 'National Affairs 🇮🇳' : 'Global Discovery 🌐',
-              eli10: 'ELI10: ' + (item.factExplanation || item.fact || 'Fascinating educational discovery verified for young minds!'),
-              body: item.question || item.q || 'Knowledge digest exploring real-world innovations and history.',
+              title: item.factTitle || item.topic || ('News Digest ' + (idx + 1) + ': ' + (item.topic || 'Current Affairs')),
+              category: (item.domain === 'national' || item.domain === 'National') ? 'National Affairs 🇮🇳' : 'Global Discovery 🌐',
+              eli10: 'ELI10: ' + (item.factExplanation || item.didYouKnowFact || item.fact || 'Fascinating educational discovery verified for young minds!'),
+              body: item.story || item.content || item.summary || ((item.didYouKnowFact ? (item.didYouKnowFact + ' ') : '') + (item.questionText || item.question || item.q || 'Knowledge digest exploring real-world innovations and history.')),
               quiz: {
-                q: item.question || item.q || 'What did you learn from this digest?',
-                opts: Array.isArray(item.options) ? item.options : ['Option A', 'Option B', 'Option C', 'Option D'],
-                correct: item.correctAnswerIndex !== undefined ? item.correctAnswerIndex : 0,
-                fact: item.factExplanation || item.fact || 'Knowledge fact recall.'
+                q: item.questionText || item.question || item.q || 'What did you learn from this digest?',
+                opts: Array.isArray(item.options) ? item.options : (item.optionsJson ? (function() { try { return JSON.parse(item.optionsJson); } catch (e) { return ['Option A', 'Option B', 'Option C', 'Option D']; } })() : ['Option A', 'Option B', 'Option C', 'Option D']),
+                correct: item.correctOptionIndex !== undefined ? Number(item.correctOptionIndex) : (item.correctAnswerIndex !== undefined ? Number(item.correctAnswerIndex) : 0),
+                fact: item.didYouKnowFact || item.factExplanation || item.fact || 'Knowledge fact recall.'
               }
             }));
           } else {
@@ -9514,14 +9565,18 @@ const ZoptroApiClient = {
                   };
                 });
               } else {
-                currentNewsData = [];
+                currentNewsData = DEFAULT_JUNIOR_NEWS;
               }
             } else {
-              currentNewsData = [];
+              currentNewsData = DEFAULT_JUNIOR_NEWS;
             }
           }
           renderNewsPills();
-          loadNewsArticle(0);
+          loadNewsArticle(currentNewsIndex || 0);
+        }).catch(function(e) {
+          console.warn('Background news sync fallback:', e);
+          renderNewsPills();
+          loadNewsArticle(currentNewsIndex || 0);
         });
       }
     }
@@ -14281,7 +14336,7 @@ const ZoptroApiClient = {
     }
 
     // ==========================================
-    // WINDOW ONLOAD INITIALIZER
+    // WINDOW ONLOAD INITIALIZER (OPTIMIZED LAZY-LOADING)
     // ==========================================
     window.onload = function () {
       initializePresentation();
@@ -14290,24 +14345,8 @@ const ZoptroApiClient = {
         BrowserMockBackend.init();
       }
       loadAuthSession();
-      renderHabits();
-      renderWeeklyGrid();
-      if (typeof renderDailyGk === 'function') renderDailyGk();
-      if (typeof renderCompetitiveExams === 'function') renderCompetitiveExams();
-      if (typeof loadDynamicNews === 'function') loadDynamicNews();
-      if (typeof renderStoryTime === 'function') renderStoryTime();
-      if (typeof renderEqLab === 'function') renderEqLab();
-      renderRewardsCatalog();
-      renderParentChildSelector();
-      renderVerificationQueue();
-      renderParentHabitsCRUD();
-      renderParentAnalytics();
-      renderParentHistory();
       updateGamificationUI();
       updateSprintUI();
-      if (typeof initAdminAiStudioCurriculum === 'function') {
-        initAdminAiStudioCurriculum();
-      }
 
       // Check initial URL route hash
       let initialRoute = 'landing';
