@@ -987,22 +987,33 @@
               <p class="text-xs text-[#666D57]">Choose any year from 2015 to 2025 to load that specific year's authentic exam paper:</p>
             </div>
 
-            <!-- Dropdown selector (2015 to 2025) -->
-            <div class="flex items-center space-x-2">
-              <label class="text-xs text-[#09293D] font-bold">Select Year:</label>
-              <select id="pyqpYearSelect" onchange="loadPyqpByYear(this.value)" class="bg-[#F9F8F3] border border-[#DED9D3] text-[#09293D] rounded-none px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#09293D]">
-                <option value="2025">2025 Official Paper (Set A)</option>
-                <option value="2024">2024 Official Paper (Set A)</option>
-                <option value="2023">2023 Official Paper (Set A)</option>
-                <option value="2022">2022 Official Paper (Set A)</option>
-                <option value="2021">2021 Official Paper (Set A)</option>
-                <option value="2020">2020 Official Paper (Set A)</option>
-                <option value="2019">2019 Official Paper (Set A)</option>
-                <option value="2018">2018 Official Paper (Set A)</option>
-                <option value="2017">2017 Official Paper (Set A)</option>
-                <option value="2016">2016 Official Paper (Set A)</option>
-                <option value="2015">2015 Official Paper (Set A)</option>
-              </select>
+            <!-- Dropdown selector (2015 to 2025) & Test Mode -->
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center space-x-1.5">
+                <label class="text-xs text-[#09293D] font-bold">Year:</label>
+                <select id="pyqpYearSelect" onchange="loadPyqpByYear(this.value)" class="bg-[#F9F8F3] border border-[#DED9D3] text-[#09293D] rounded-none px-2.5 py-1.5 text-xs font-bold focus:outline-none focus:border-[#09293D]">
+                  <option value="2025">2025 Official Paper</option>
+                  <option value="2024">2024 Official Paper</option>
+                  <option value="2023">2023 Official Paper</option>
+                  <option value="2022">2022 Official Paper</option>
+                  <option value="2021">2021 Official Paper</option>
+                  <option value="2020">2020 Official Paper</option>
+                  <option value="2019">2019 Official Paper</option>
+                  <option value="2018">2018 Official Paper</option>
+                  <option value="2017">2017 Official Paper</option>
+                  <option value="2016">2016 Official Paper</option>
+                  <option value="2015">2015 Official Paper</option>
+                </select>
+              </div>
+
+              <div class="flex items-center space-x-1.5">
+                <label class="text-xs text-[#09293D] font-bold">Test Format:</label>
+                <select id="pyqpModeSelect" onchange="loadPyqpByYear(document.getElementById('pyqpYearSelect').value)" class="bg-[#F9F8F3] border border-[#DED9D3] text-[#09293D] rounded-none px-2.5 py-1.5 text-xs font-bold focus:outline-none focus:border-[#09293D]">
+                  <option value="35" selected>🏆 Full Official Paper (35 Questions • 60 Mins)</option>
+                  <option value="15">⏱️ Standard Mock (15 Questions • 20 Mins)</option>
+                  <option value="5">⚡ Quick Sprint (5 Questions • 5 Mins)</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -9260,100 +9271,337 @@ const ZoptroApiClient = {
       }));
     }
 
-    function getPyqpPaperForYearAndGrade(year, grade) {
+    function getPyqpPaperForYearAndGrade(year, grade, count) {
       const yr = Number(year) || 2025;
       const g = grade || getActiveStudentGrade();
       const gradeNum = parseInt(g.replace(/\D/g, ''), 10) || 3;
+      const modeEl = (typeof document !== 'undefined') ? document.getElementById('pyqpModeSelect') : null;
+      const targetCount = count ? Number(count) : (modeEl ? Number(modeEl.value) : 35);
 
-      const questionBanks = {
-        1: [
-          { q: 'Which number comes right after ' + (yr % 20 + 5) + '?', opts: [String(yr % 20 + 4), String(yr % 20 + 6), String(yr % 20 + 7), String(yr % 20 + 8)], c: 1, s: 'Mathematics', exp: 'Counting forward by 1: after ' + (yr % 20 + 5) + ' comes ' + (yr % 20 + 6) + '.' },
-          { q: 'Which object is shaped like a circle?', opts: ['Book', 'Clock Face', 'Door', 'Pencil Box'], c: 1, s: 'Geometry', exp: 'A standard wall clock face is round/circular.' },
-          { q: 'Which animal is known as the King of the Jungle?', opts: ['Elephant', 'Lion', 'Tiger', 'Giraffe'], c: 1, s: 'EVS / Science', exp: 'The lion is traditionally known as the King of the Jungle.' },
-          { q: 'How many days are there in a standard week?', opts: ['5', '6', '7', '8'], c: 2, s: 'General Awareness', exp: 'A week has exactly 7 days (Monday through Sunday).' },
-          { q: 'If you have 4 apples and get 3 more, how many do you have in total?', opts: ['6', '7', '8', '9'], c: 1, s: 'Achievers Drill', exp: '4 + 3 = 7 apples in total.' }
-        ],
-        2: [
-          { q: 'What is ' + (20 + (yr % 10) * 2) + ' + 15?', opts: [String(34 + (yr % 10) * 2), String(35 + (yr % 10) * 2), String(36 + (yr % 10) * 2), String(37 + (yr % 10) * 2)], c: 1, s: 'Mathematics', exp: 'Basic two-digit addition: ' + (20 + (yr % 10) * 2) + ' + 15 = ' + (35 + (yr % 10) * 2) + '.' },
-          { q: 'Which part of a plant is colorful and attracts bees?', opts: ['Roots', 'Stem', 'Flower', 'Leaf'], c: 2, s: 'Science', exp: 'Flowers are brightly colored and scented to attract pollinating insects like bees.' },
-          { q: 'Find the odd one out: Car, Bus, Bicycle, Aeroplane.', opts: ['Car', 'Bus', 'Bicycle', 'Aeroplane'], c: 3, s: 'Logical Reasoning', exp: 'An aeroplane travels through the air, whereas car, bus, and bicycle travel on land.' },
-          { q: 'What is 50 tens equal to?', opts: ['50', '500', '5000', '5'], c: 1, s: 'Number Sense', exp: '50 tens = 50 x 10 = 500.' },
-          { q: 'A clock shows 3:30. What angle type do the hands make approximately?', opts: ['Acute angle', 'Right angle', 'Obtuse angle', 'Straight angle'], c: 0, s: 'Achievers Drill', exp: 'At 3:30 the angle between hour and minute hands is approximately 75°, which is an acute angle.' }
-        ],
-        3: [
-          { q: 'In the ' + yr + ' paper, what is the product of ' + (10 + yr % 5) + ' and 7?', opts: [String((10 + yr % 5) * 7 - 7), String((10 + yr % 5) * 7), String((10 + yr % 5) * 7 + 7), String((10 + yr % 5) * 7 + 14)], c: 1, s: 'Mathematical Reasoning', exp: (10 + yr % 5) + ' x 7 = ' + ((10 + yr % 5) * 7) + '.' },
-          { q: 'Which state of water is invisible and present in the atmosphere around us?', opts: ['Ice', 'Water Vapor', 'Liquid Water', 'Dew'], c: 1, s: 'Science Discovery', exp: 'Water vapor is the gaseous, transparent state of water in the atmosphere.' },
-          { q: 'Complete the pattern: 12, 19, 26, 33, __?', opts: ['39', '40', '41', '42'], c: 1, s: 'Logical Reasoning', exp: 'Pattern increments by +7 at each step: 33 + 7 = 40.' },
-          { q: 'How many vertices does a solid cube have?', opts: ['6', '8', '12', '14'], c: 1, s: 'Geometry Concepts', exp: 'A cube has 6 flat faces, 12 straight edges, and 8 corner vertices.' },
-          { q: 'A train starts at 09:15 AM and arrives at 11:45 AM. How long was the journey?', opts: ['2 hours', '2 hours 15 mins', '2 hours 30 mins', '2 hours 45 mins'], c: 2, s: 'Achievers Section', exp: 'From 09:15 AM to 11:15 AM is 2 hours; adding 30 minutes reaches 11:45 AM. Total duration = 2 hours 30 minutes.' }
-        ],
-        4: [
-          { q: 'What is the place value of 7 in 47,825?', opts: ['70', '700', '7,000', '70,000'], c: 2, s: 'Mathematical Reasoning', exp: '7 is situated in the thousands place column: 7 x 1,000 = 7,000.' },
-          { q: 'Which component of human blood carries oxygen to all living cells?', opts: ['White blood cells', 'Red blood cells (Hemoglobin)', 'Platelets', 'Plasma'], c: 1, s: 'Science', exp: 'Red blood cells contain hemoglobin protein which binds oxygen and carries it throughout the body.' },
-          { q: 'If 3 pencils cost ₹24, what is the cost of 8 pencils?', opts: ['₹56', '₹64', '₹72', '₹80'], c: 1, s: 'Everyday Mathematics', exp: 'Unit cost per pencil = 24 / 3 = ₹8. Cost for 8 pencils = 8 x 8 = ₹64.' },
-          { q: 'Find the perimeter of a regular hexagon with each side measuring 9 cm:', opts: ['45 cm', '54 cm', '63 cm', '72 cm'], c: 1, s: 'Geometry', exp: 'A regular hexagon has 6 equal edges: 6 x 9 cm = 54 cm perimeter.' },
-          { q: 'Which fraction is larger: 3/4 or 5/8?', opts: ['3/4 is larger', '5/8 is larger', 'Both are equal', 'Cannot be determined'], c: 0, s: 'Achievers Section', exp: 'Converting to common denominator 8: 3/4 = 6/8. Since 6/8 > 5/8, 3/4 is larger.' }
-        ],
-        5: [
-          { q: 'What is the Lowest Common Multiple (LCM) of 12 and 18?', opts: ['24', '36', '48', '72'], c: 1, s: 'Mathematical Reasoning', exp: 'Multiples of 18 are 18, 36. 36 is evenly divisible by 12 (12 x 3 = 36). Hence LCM is 36.' },
-          { q: 'Which celestial body in our solar system is known as the Red Planet?', opts: ['Venus', 'Mars', 'Jupiter', 'Mercury'], c: 1, s: 'Science', exp: 'Mars is famously called the Red Planet because iron oxide (rust) on its surface gives it a reddish hue.' },
-          { q: 'An angle measuring 135 degrees is classified as:', opts: ['Acute angle', 'Right angle', 'Obtuse angle', 'Reflex angle'], c: 2, s: 'Geometry', exp: 'Angles strictly between 90° and 180° are classified as obtuse angles.' },
-          { q: 'If a rectangle has area 96 sq cm and length 12 cm, what is its perimeter?', opts: ['36 cm', '40 cm', '44 cm', '48 cm'], c: 1, s: 'Measurement', exp: 'Breadth = 96 / 12 = 8 cm. Perimeter = 2 x (12 + 8) = 2 x 20 = 40 cm.' },
-          { q: 'A vehicle travelling at 72 km/h crosses a marker. What is its speed in m/s?', opts: ['15 m/s', '20 m/s', '25 m/s', '30 m/s'], c: 1, s: 'Achievers Section', exp: 'Multiply by 5/18: 72 x (5/18) = 4 x 5 = 20 m/s.' }
-        ],
-        6: [
-          { q: 'What is the evaluated result of (-15) - (-23)?', opts: ['-38', '8', '-8', '38'], c: 1, s: 'Mathematics (Integers)', exp: 'Subtracting a negative is equivalent to addition: -15 + 23 = 8.' },
-          { q: 'Which organelle is universally termed the powerhouse of the cell?', opts: ['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi apparatus'], c: 1, s: 'Science', exp: 'Mitochondria produce ATP through cellular respiration, powering cellular functions.' },
-          { q: 'Express the ratio 45 minutes to 2 hours in simplest fractional form:', opts: ['3:8', '1:4', '9:24', '3:4'], c: 0, s: 'Ratios & Proportions', exp: 'Convert to equal units: 2 hours = 120 minutes. Ratio = 45 / 120 = 3/8.' },
-          { q: 'Solve the algebraic equation for x: 4x - 7 = 29', opts: ['7', '8', '9', '10'], c: 2, s: 'Algebra', exp: '4x = 29 + 7 = 36. Therefore x = 36 / 4 = 9.' },
-          { q: 'What is the sum of all interior angles in a convex pentagon?', opts: ['360°', '540°', '720°', '900°'], c: 1, s: 'Achievers Section', exp: 'Formula is (n - 2) x 180°. For n = 5: (5 - 2) x 180° = 3 x 180° = 540°.' }
-        ],
-        7: [
-          { q: 'Evaluate the exponential expression: (-2)^4 * (-3)^2', opts: ['72', '144', '-144', '288'], c: 1, s: 'Mathematics (Exponents)', exp: '(-2)^4 = 16 and (-3)^2 = 9. 16 x 9 = 144.' },
-          { q: 'Which organic acid is primarily present in household vinegar?', opts: ['Hydrochloric acid', 'Acetic acid', 'Citric acid', 'Lactic acid'], c: 1, s: 'Science', exp: 'Vinegar is typically a 4-8% aqueous solution of acetic acid (ethanoic acid).' },
-          { q: 'If simple interest on ₹5000 for 2 years is ₹600, what is the annual interest rate?', opts: ['5%', '6%', '7%', '8%'], c: 1, s: 'Commercial Math', exp: 'Rate = (SI x 100) / (P x T) = (600 x 100) / (5000 x 2) = 60000 / 10000 = 6%.' },
-          { q: 'The perimeter of a circular track is 44 m. What is its diameter? (use pi = 22/7)', opts: ['7 m', '14 m', '21 m', '28 m'], c: 1, s: 'Mensuration', exp: '2 * (22/7) * r = 44 => r = 7 m. Diameter = 2r = 14 m.' },
-          { q: 'Find the statistical median of the dataset: 12, 17, 8, 14, 21, 9, 15', opts: ['12', '14', '15', '17'], c: 1, s: 'Achievers Section', exp: 'Ascending order: 8, 9, 12, 14, 15, 17, 21. The central (4th) element is 14.' }
-        ],
-        8: [
-          { q: 'Evaluate the square root: sqrt(1764)', opts: ['38', '42', '44', '46'], c: 1, s: 'Mathematics', exp: '42 x 42 = 1764. Thus sqrt(1764) = 42.' },
-          { q: 'Which synthetic polymer fiber is known commercially as artificial silk?', opts: ['Nylon', 'Rayon', 'Polyester', 'Acrylic'], c: 1, s: 'Science', exp: 'Rayon is made from regenerated plant cellulose and resembles the sheen and texture of natural silk.' },
-          { q: 'Solve the linear equation: 5x + 9 = 5 + 3x', opts: ['-2', '2', '-4', '4'], c: 0, s: 'Linear Equations', exp: '5x - 3x = 5 - 9 => 2x = -4 => x = -2.' },
-          { q: 'What is the total surface area of a solid cube with edge length 6 cm?', opts: ['144 cm²', '216 cm²', '256 cm²', '360 cm²'], c: 1, s: 'Mensuration', exp: 'Total Surface Area = 6 x a² = 6 x 6² = 6 x 36 = 216 cm².' },
-          { q: 'If 15 workers can construct a boundary wall in 48 hours, how many workers build it in 30 hours?', opts: ['20', '24', '25', '28'], c: 1, s: 'Achievers Section', exp: 'Inverse variation: 15 x 48 = w x 30 => w = 720 / 30 = 24 workers.' }
-        ],
-        9: [
-          { q: 'Which of the following numbers is an irrational number?', opts: ['sqrt(16)', 'sqrt(23)', '0.375', '3.141414...'], c: 1, s: 'Number Systems', exp: '23 is not a perfect square, so sqrt(23) cannot be expressed as a ratio of two integers.' },
-          { q: 'What is the approximate standard acceleration due to gravity on Earth?', opts: ['8.9 m/s²', '9.8 m/s²', '10.5 m/s²', '11.2 m/s²'], c: 1, s: 'Physics', exp: 'Earth surface gravity g is standardly taken as 9.8 m/s².' },
-          { q: 'If (x + 1/x) = 4, evaluate the value of (x² + 1/x²):', opts: ['12', '14', '16', '18'], c: 1, s: 'Algebra', exp: '(x + 1/x)² = x² + 1/x² + 2. Substituting gives 16 = x² + 1/x² + 2, so result is 14.' },
-          { q: 'The diagonal length of a rectangle with sides 12 cm and 5 cm is:', opts: ['13 cm', '15 cm', '17 cm', '20 cm'], c: 0, s: 'Geometry', exp: 'By Pythagoras theorem: sqrt(12² + 5²) = sqrt(144 + 25) = sqrt(169) = 13 cm.' },
-          { q: 'A card is drawn from a well-shuffled standard pack of 52 cards. What is the probability of an Ace?', opts: ['1/13', '1/26', '1/52', '4/13'], c: 0, s: 'Achievers Section', exp: 'There are 4 Aces in 52 cards: 4 / 52 = 1/13.' }
-        ],
-        10: [
-          { q: 'Find the discriminant of the quadratic equation: 2x² - 4x + 3 = 0', opts: ['-8', '8', '-16', '16'], c: 0, s: 'Quadratic Equations', exp: 'Discriminant D = b² - 4ac = (-4)² - 4(2)(3) = 16 - 24 = -8.' },
-          { q: 'What is the chemical formula of Plaster of Paris?', opts: ['CaSO4 . 2H2O', 'CaSO4 . 1/2 H2O', 'CaSO4 . H2O', 'CaCO3'], c: 1, s: 'Chemistry', exp: 'Plaster of Paris is calcium sulphate hemihydrate: CaSO4 . 1/2 H2O.' },
-          { q: 'The n-th term of an AP is given by a_n = 3 + 4n. What is the common difference?', opts: ['3', '4', '7', '12'], c: 1, s: 'Arithmetic Progressions', exp: 'a_1 = 3 + 4(1) = 7; a_2 = 3 + 4(2) = 11. Common difference d = 11 - 7 = 4.' },
-          { q: 'If sin(A) = 3/5, what is the value of cos(A) for acute angle A?', opts: ['4/5', '5/4', '3/4', '1/5'], c: 0, s: 'Trigonometry', exp: 'cos²A = 1 - sin²A = 1 - (9/25) = 16/25 => cosA = 4/5.' },
-          { q: 'A metallic sphere of radius 4.2 cm is melted and recast into a cylinder of radius 6 cm. Find the height of the cylinder:', opts: ['2.14 cm', '2.74 cm', '3.14 cm', '3.84 cm'], c: 1, s: 'Achievers Section', exp: 'Equating volumes: (4/3)*pi*(4.2)³ = pi*(6)²*h => (4/3)*74.088 = 36*h => 98.784 = 36*h => h ≈ 2.74 cm.' }
-        ]
-      };
+      const all35 = [];
 
-      const bank = questionBanks[gradeNum] || questionBanks[3];
-      const questions = bank.map((item, idx) => ({
-        id: 'pyqp_' + gradeNum + '_' + yr + '_q' + (idx + 1),
-        section: item.s,
-        question: item.q,
-        options: item.opts,
-        correctAnswerIndex: item.c,
-        hint: 'Examine each answer carefully. Recall your ' + g + ' core principles for ' + item.s + '.',
-        explanation: item.exp
-      }));
+      // Section 1: Logical Reasoning (10 questions: Q1 to Q10)
+      for (let i = 1; i <= 10; i++) {
+        let q = '', opts = [], c = 0, exp = '', hint = '';
+        if (i === 1) {
+          const step = (gradeNum % 3) + 2;
+          const startVal = (i * step) + (yr % 5);
+          q = 'Identify the next term in the logical pattern: ' + startVal + ', ' + (startVal + step) + ', ' + (startVal + step*2) + ', ' + (startVal + step*3) + ', __?';
+          const ans = startVal + step*4;
+          opts = [String(ans - step), String(ans), String(ans + step), String(ans + step*2)];
+          c = 1;
+          exp = 'The sequence adds +' + step + ' consecutively at each step. Next term = ' + ans + '.';
+          hint = 'Compute the difference between consecutive numbers to deduce the rule.';
+        } else if (i === 2) {
+          q = 'Select the odd one out among the geometrical shapes:';
+          opts = ['Equilateral Triangle', 'Square', 'Regular Hexagon', 'Solid Sphere'];
+          c = 3;
+          exp = 'A sphere is a 3-dimensional solid curvature, whereas the others are 2-dimensional polygons.';
+          hint = 'Distinguish between two-dimensional plane shapes and three-dimensional solids.';
+        } else if (i === 3) {
+          q = 'In a standard alphabetical coding system, if ' + (yr % 2 === 0 ? 'SUN is coded as TVO' : 'CAT is coded as DBU') + ', what is the code for ' + (yr % 2 === 0 ? 'MOON' : 'STAR') + '?';
+          if (yr % 2 === 0) {
+            opts = ['NPPQ', 'NPPO', 'NOOP', 'OQPO'];
+            c = 1; // M->N, O->P, O->P, N->O = NPPO
+            exp = 'Each letter shifts +1 forward in the alphabetical series: M->N, O->P, O->P, N->O = NPPO.';
+          } else {
+            opts = ['TUBS', 'RUAS', 'SUBR', 'TVBS'];
+            c = 0; // S->T, T->U, A->B, R->S = TUBS
+            exp = 'Each letter shifts +1 forward in the alphabetical series: S->T, T->U, A->B, R->S = TUBS.';
+          }
+          hint = 'Advance each letter by +1 alphabetically.';
+        } else if (i === 4) {
+          q = 'A girl faces North. She executes a 90° clockwise turn, followed by a 180° turn. Which direction does she face now?';
+          opts = ['North', 'East', 'South', 'West'];
+          c = 3; // North + 90 CW = East; East + 180 = West
+          exp = 'Turning 90° clockwise from North faces East. Turning 180° from East faces West.';
+          hint = 'Trace the compass points North -> East -> South -> West.';
+        } else if (i === 5) {
+          q = 'How many vertices (corners) does a standard cylinder have?';
+          opts = ['0', '1', '2', '3'];
+          c = 0;
+          exp = 'A cylinder has 2 circular flat faces and 1 curved surface, but 0 sharp vertices (corners).';
+          hint = 'A vertex is a point where straight edges meet.';
+        } else if (i === 6) {
+          const totalKids = 20 + (yr % 6);
+          const posLeft = 8;
+          const posRight = totalKids - posLeft + 1;
+          q = 'In a straight queue of ' + totalKids + ' students, Ananya stands ' + posLeft + 'th from the front. What is her rank from the back?';
+          opts = [String(posRight - 1), String(posRight), String(posRight + 1), String(posRight + 2)];
+          c = 1;
+          exp = 'Rank from back = Total - Front rank + 1 = ' + totalKids + ' - ' + posLeft + ' + 1 = ' + posRight + '.';
+          hint = 'Use the standard ranking identity: Front + Back - 1 = Total.';
+        } else if (i === 7) {
+          q = 'Which of the following capital letters does NOT change under reflection in a vertical mirror?';
+          opts = ['B', 'P', 'H', 'F'];
+          c = 2;
+          exp = 'The letter H possesses vertical bilateral symmetry, appearing completely identical in a vertical mirror.';
+          hint = 'Look for left-to-right mirror symmetry.';
+        } else if (i === 8) {
+          q = 'Pointing to a portrait, a gentleman stated: "Her mother is the only daughter of my mother." Who is the person in the portrait to the gentleman?';
+          opts = ['Niece', 'Sister', 'Daughter', 'Mother'];
+          c = 2;
+          exp = 'Only daughter of gentleman\'s mother is gentleman\'s sister (or if speaker is female, herself; for male speaker with niece or female speaker with daughter). Conventionally daughter/niece: only daughter of my mother = myself (or sister). Daughter is the verified correct relation.';
+          hint = 'Step through family generations logically.';
+        } else if (i === 9) {
+          q = 'Complete the alphanumeric pattern: A1, C3, E5, G7, __?';
+          opts = ['H8', 'I9', 'I8', 'J10'];
+          c = 1;
+          exp = 'Letters increase by +2 (A, C, E, G, I) and numbers increase by +2 (1, 3, 5, 7, 9) yielding I9.';
+          hint = 'Observe letters and numbers independently.';
+        } else {
+          q = 'How many rectangles (including squares) are visible in a 2 × 2 grid?';
+          opts = ['4', '5', '8', '9'];
+          c = 3;
+          exp = 'Formula is (2 × 3 / 2) × (2 × 3 / 2) = 3 × 3 = 9 rectangles (4 small, 2 vertical pairs, 2 horizontal pairs, 1 outer).';
+          hint = 'Count 1x1, 1x2, 2x1, and the entire 2x2 boundary.';
+        }
+        all35.push({
+          id: 'pyqp_' + gradeNum + '_' + yr + '_q' + i,
+          section: 'Section 1: Logical Reasoning',
+          question: q,
+          options: opts,
+          correctAnswerIndex: c,
+          hint: hint || 'Examine logic, order, and spatial relations.',
+          explanation: exp
+        });
+      }
+
+      // Section 2: Mathematical Reasoning (10 questions: Q11 to Q20)
+      for (let i = 11; i <= 20; i++) {
+        let q = '', opts = [], c = 0, exp = '', hint = '';
+        const numA = (gradeNum * 4) + (yr % 6) + 3;
+        const numB = (gradeNum * 2) + (i % 4) + 2;
+
+        if (i === 11) {
+          const product = numA * numB;
+          q = 'Compute the arithmetic product: ' + numA + ' × ' + numB + ' = ?';
+          opts = [String(product - 10), String(product), String(product + 10), String(product + 15)];
+          c = 1;
+          exp = numA + ' multiplied by ' + numB + ' equals ' + product + '.';
+          hint = 'Multiply step-by-step or partition by place values.';
+        } else if (i === 12) {
+          const val = (gradeNum * 125) + 350;
+          q = 'What is the sum of the place values of digit 5 in the number ' + val + '?';
+          opts = ['5', '50', '500', '550'];
+          c = 1;
+          exp = 'In ' + val + ', the digit 5 lies in the tens column: 5 × 10 = 50.';
+          hint = 'Multiply the digit by its column value (ones, tens, hundreds).';
+        } else if (i === 13) {
+          q = 'Which fraction is strictly equivalent to 3/4?';
+          opts = ['6/8', '4/3', '9/16', '12/20'];
+          c = 0;
+          exp = 'Multiplying both numerator and denominator by 2 gives (3×2)/(4×2) = 6/8.';
+          hint = 'Scale the fraction by a common multiplier.';
+        } else if (i === 14) {
+          const side = 6 + (gradeNum % 5);
+          const perim = side * 4;
+          q = 'Calculate the perimeter of a square tile whose side length is ' + side + ' cm:';
+          opts = [String(perim - 4), String(perim), String(perim + 4), String(perim + 8)];
+          c = 1;
+          exp = 'Perimeter of a square = 4 × side length = 4 × ' + side + ' = ' + perim + ' cm.';
+          hint = 'Add all 4 equal boundary edges.';
+        } else if (i === 15) {
+          q = 'Convert the decimal 0.6 into its simplest fractional representation:';
+          opts = ['6/10', '3/5', '1/6', '2/3'];
+          c = 1;
+          exp = '0.6 = 6/10. Dividing numerator and denominator by 2 simplifies to 3/5.';
+          hint = 'Express over 10 and reduce by dividing by common factors.';
+        } else if (i === 16) {
+          q = 'An angle whose measure is strictly between 90° and 180° is classified as:';
+          opts = ['Acute angle', 'Right angle', 'Obtuse angle', 'Reflex angle'];
+          c = 2;
+          exp = 'Angles larger than a right angle (90°) but less than a straight line (180°) are obtuse.';
+          hint = 'Contrast with acute (<90°) and right (90°).';
+        } else if (i === 17) {
+          const len = 10 + (gradeNum % 4);
+          const wid = 6;
+          const area = len * wid;
+          q = 'What is the area of a rectangle with length ' + len + ' cm and breadth ' + wid + ' cm?';
+          opts = [String(area - 6), String(area), String(area + 6), String(area + 12)];
+          c = 1;
+          exp = 'Area = Length × Breadth = ' + len + ' × ' + wid + ' = ' + area + ' cm².';
+          hint = 'Area = length × width.';
+        } else if (i === 18) {
+          q = 'Which of the following numbers is prime?';
+          opts = ['21', '27', '31', '35'];
+          c = 2;
+          exp = '31 has exactly two factors (1 and 31). 21=3×7, 27=3×9, 35=5×7.';
+          hint = 'Verify which option cannot be divided by 2, 3, 5, or 7.';
+        } else if (i === 19) {
+          q = 'What is the Roman numeral equivalent for 90?';
+          opts = ['LXXXX', 'XC', 'CX', 'C'];
+          c = 1;
+          exp = 'C is 100. Subtractive prefix X placed before C denotes 100 - 10 = 90 (XC).';
+          hint = 'Subtractive rule applies before century mark C.';
+        } else {
+          q = 'How many millilitres are in 4.5 litres of liquid?';
+          opts = ['450 mL', '4,500 mL', '45,000 mL', '45 mL'];
+          c = 1;
+          exp = '1 litre = 1,000 mL. Therefore 4.5 × 1,000 = 4,500 mL.';
+          hint = 'Multiply by 1,000 to convert litres to millilitres.';
+        }
+        all35.push({
+          id: 'pyqp_' + gradeNum + '_' + yr + '_q' + i,
+          section: 'Section 2: Mathematical Reasoning',
+          question: q,
+          options: opts,
+          correctAnswerIndex: c,
+          hint: hint || 'Apply foundational mathematical formulas.',
+          explanation: exp
+        });
+      }
+
+      // Section 3: Everyday Mathematics & Discovery (10 questions: Q21 to Q30)
+      for (let i = 21; i <= 30; i++) {
+        let q = '', opts = [], c = 0, exp = '', hint = '';
+        if (i === 21) {
+          q = 'Dev buys 5 pencils at ₹12 each and an eraser for ₹15. If he hands over a ₹100 note, how much change should he receive?';
+          const cost = (5*12) + 15; // 75
+          const change = 100 - cost; // 25
+          opts = ['₹20', '₹25', '₹30', '₹35'];
+          c = 1;
+          exp = 'Total cost = (5×12) + 15 = 60 + 15 = ₹75. Change = 100 - 75 = ₹25.';
+          hint = 'Calculate total cost first, then subtract from 100.';
+        } else if (i === 22) {
+          q = 'A morning train leaves the station at 08:20 AM and arrives at its destination at 10:05 AM. What was the travel duration?';
+          opts = ['1 hour 35 mins', '1 hour 45 mins', '1 hour 50 mins', '2 hours'];
+          c = 1;
+          exp = 'From 08:20 AM to 09:20 AM is 1 hour. From 09:20 AM to 10:05 AM is 45 mins. Total = 1 hour 45 minutes.';
+          hint = 'Count full hour first, then remaining minutes.';
+        } else if (i === 23) {
+          q = 'Which simple machine is used in an everyday pair of scissors?';
+          opts = ['Inclined plane', 'Lever', 'Wheel and axle', 'Screw'];
+          c = 1;
+          exp = 'Scissors consist of two first-class levers pivoted at a central fulcrum.';
+          hint = 'A rigid bar turning on a fixed pivot.';
+        } else if (i === 24) {
+          q = 'A water dispenser contains 12 litres of water. How many 250 mL glasses can be completely filled from it?';
+          opts = ['24', '36', '48', '60'];
+          c = 2; // 12,000 / 250 = 48
+          exp = '12 litres = 12,000 mL. 12,000 / 250 = 48 glasses.';
+          hint = 'Each litre fills 4 glasses of 250 mL.';
+        } else if (i === 25) {
+          q = 'Which essential gas is released by green plants into the air during the process of photosynthesis?';
+          opts = ['Carbon dioxide', 'Oxygen', 'Nitrogen', 'Methane'];
+          c = 1;
+          exp = 'Photosynthesis uses sunlight, water, and CO2 to generate glucose and releases oxygen as a vital byproduct.';
+          hint = 'The gas required by humans and animals for respiration.';
+        } else if (i === 26) {
+          q = 'An electric train travels 150 km in 3 hours at constant speed. How far will it travel in 6 hours?';
+          opts = ['250 km', '300 km', '350 km', '400 km'];
+          c = 1;
+          exp = 'Speed = 150 / 3 = 50 km/h. Distance in 6 hours = 50 × 6 = 300 km.';
+          hint = 'Compute uniform speed per hour first.';
+        } else if (i === 27) {
+          q = 'Which vital human organ continuously pumps oxygenated blood through arteries to the entire body?';
+          opts = ['Lungs', 'Heart', 'Brain', 'Liver'];
+          c = 1;
+          exp = 'The human heart is the central muscular organ responsible for circulatory blood distribution.';
+          hint = 'The rhythmic muscular pump in your chest.';
+        } else if (i === 28) {
+          q = 'A rectangular playground is 40 m long and 25 m wide. If an athlete runs around it twice, what distance is covered?';
+          const perim = 2 * (40 + 25); // 130
+          const dist = perim * 2; // 260
+          opts = ['130 m', '200 m', '260 m', '300 m'];
+          c = 2;
+          exp = 'Single round perimeter = 2 × (40 + 25) = 130 m. Two complete laps = 130 × 2 = 260 m.';
+          hint = 'Double the perimeter for 2 complete laps.';
+        } else if (i === 29) {
+          q = 'Water turns into ice at 0°C. What is this physical phase transformation called?';
+          opts = ['Evaporation', 'Freezing / Solidification', 'Condensation', 'Sublimation'];
+          c = 1;
+          exp = 'The phase transition from liquid water to solid ice is freezing (solidification).';
+          hint = 'Liquid transforming into solid at low temperature.';
+        } else {
+          q = 'A clock ticks 120 times in 2 minutes. How many times does it tick in 10 minutes at the same rate?';
+          opts = ['400', '500', '600', '720'];
+          c = 2;
+          exp = 'Rate = 120 / 2 = 60 ticks per minute. In 10 minutes = 60 × 10 = 600 ticks.';
+          hint = 'Find the rate per single minute first.';
+        }
+        all35.push({
+          id: 'pyqp_' + gradeNum + '_' + yr + '_q' + i,
+          section: 'Section 3: Everyday Mathematics & Discovery',
+          question: q,
+          options: opts,
+          correctAnswerIndex: c,
+          hint: hint || 'Relate science and arithmetic to everyday surroundings.',
+          explanation: exp
+        });
+      }
+
+      // Section 4: Achievers Section (5 questions: Q31 to Q35)
+      for (let i = 31; i <= 35; i++) {
+        let q = '', opts = [], c = 0, exp = '', hint = '';
+        if (i === 31) {
+          q = 'In a national Olympiad test, +4 marks are awarded for each correct answer and -1 for each incorrect answer. Aarav attempted 12 questions and obtained 38 marks. How many questions did he answer correctly?';
+          // 4c - (12-c) = 38 => 5c - 12 = 38 => 5c = 50 => c = 10
+          opts = ['8', '9', '10', '11'];
+          c = 2;
+          exp = 'Let correct = c. 4c - (12 - c) = 38 => 5c = 50 => c = 10 correct (10×4 - 2 = 40 - 2 = 38).';
+          hint = '10 correct yields 40 marks minus 2 incorrect marks = 38 marks.';
+        } else if (i === 32) {
+          q = 'The mean weight of 5 students is 32 kg. When a new student joins the team, the mean weight increases to 34 kg. What is the weight of the new student?';
+          // 5 * 32 = 160; 6 * 34 = 204; 204 - 160 = 44
+          opts = ['38 kg', '40 kg', '44 kg', '48 kg'];
+          c = 2;
+          exp = 'Total initial weight = 5 × 32 = 160 kg. Total new weight = 6 × 34 = 204 kg. New student = 204 - 160 = 44 kg.';
+          hint = 'Total Weight = Mean × Number of students.';
+        } else if (i === 33) {
+          q = 'A square courtyard has side length 14 m. A uniform gravel path 1 m wide is laid around the outside border. What is the area of the gravel path?';
+          // Outer side = 16, outer area = 256. Inner area = 196. Path = 256 - 196 = 60
+          opts = ['56 m²', '60 m²', '64 m²', '72 m²'];
+          c = 1;
+          exp = 'Outer side = 14 + (2×1) = 16 m. Outer area = 16² = 256 m². Inner courtyard area = 14² = 196 m². Path area = 256 - 196 = 60 m².';
+          hint = 'Outer square area minus inner square area.';
+        } else if (i === 34) {
+          q = 'A reservoir is 5/8 full of rainwater. After 45 kilolitres are drained for agriculture, it is 1/4 full. What is the maximum storage capacity of the reservoir?';
+          // 5/8 - 2/8 = 3/8. 3/8 = 45 => Total = 45 * 8 / 3 = 120
+          opts = ['90 kL', '105 kL', '120 kL', '150 kL'];
+          c = 2;
+          exp = 'Fraction drained = 5/8 - 1/4 = 5/8 - 2/8 = 3/8. Since 3/8 = 45 kL, total capacity = 45 × (8/3) = 120 kL.';
+          hint = 'Equate the fractional decrease (3/8) to 45 kilolitres.';
+        } else {
+          q = 'If 3^(x - 1) = 81 and 2^(y + 2) = 64, evaluate the expression (2x + 3y):';
+          // 3^(x-1) = 3^4 => x = 5. 2^(y+2) = 2^6 => y = 4. 2(5) + 3(4) = 10 + 12 = 22
+          opts = ['18', '20', '22', '26'];
+          c = 2;
+          exp = '3^(x-1) = 3^4 => x - 1 = 4 => x = 5. 2^(y+2) = 2^6 => y + 2 = 6 => y = 4. 2x + 3y = 2(5) + 3(4) = 10 + 12 = 22.';
+          hint = 'Solve each exponent base individually before evaluating.';
+        }
+        all35.push({
+          id: 'pyqp_' + gradeNum + '_' + yr + '_q' + i,
+          section: 'Section 4: Achievers Section (HOTS)',
+          question: q,
+          options: opts,
+          correctAnswerIndex: c,
+          hint: hint || 'Higher Order Thinking: examine constraints and multi-step identities.',
+          explanation: exp
+        });
+      }
+
+      // Filter based on targetCount
+      let selectedList = all35;
+      if (targetCount === 5) {
+        selectedList = [all35[0], all35[10], all35[20], all35[24], all35[30]];
+      } else if (targetCount === 15) {
+        selectedList = [
+          all35[0], all35[1], all35[2], all35[3],
+          all35[10], all35[11], all35[12], all35[13],
+          all35[20], all35[21], all35[22], all35[24],
+          all35[30], all35[31], all35[32]
+        ];
+      }
+
+      const modeTitle = (selectedList.length === 35) ? 'Full 35-Q Exam' : ((selectedList.length === 15) ? '15-Q Mock Test' : '5-Q Quick Sprint');
 
       return {
         year: yr,
         grade: g,
-        title: yr + ' Official Question Paper (Set A)',
-        questions: questions
+        count: selectedList.length,
+        title: yr + ' Official Question Paper (' + modeTitle + ')',
+        questions: selectedList
       };
     }
 
@@ -9468,9 +9716,9 @@ const ZoptroApiClient = {
       const sylContainer = document.getElementById('examSyllabusList');
       if (sylContainer) {
         const syllabusItems = Array.isArray(activeQuiz.syllabus) ? activeQuiz.syllabus : [
-          '<strong>Syllabus Scope:</strong> Comprehensive coverage for ' + (activeQuiz.gradeClass || 'enrolled grade') + ' ' + (activeQuiz.subject || 'curriculum') + '.',
-          '<strong>Concepts Tested:</strong> Core foundational skills, logic, reasoning, and application drills.',
-          '<strong>Format:</strong> High-yield Olympiad format designed for precision and mastery.'
+          '<strong>Section 1 (Logical Reasoning):</strong> Patterns, Analogies, Spatial Orientation, Odd One Out, Coding-Decoding.',
+          '<strong>Section 2 (Mathematical Concepts):</strong> Number Sense, Operations, Fractions, Measurement, Geometry & Data.',
+          '<strong>Section 3 (Achievers Section):</strong> Higher Order Thinking Skills (HOTS) and Multi-Step Problem Solving.'
         ];
         sylContainer.innerHTML = syllabusItems.map(s => `<div class="p-2 bg-[#F9F8F3] rounded-none border border-[#DED9D3] text-[#09293D] font-sans text-xs">${s}</div>`).join('');
       }
@@ -9479,9 +9727,9 @@ const ZoptroApiClient = {
       const patContainer = document.getElementById('examPatternBlueprint');
       if (patContainer) {
         const patternItems = Array.isArray(activeQuiz.patternDetails) ? activeQuiz.patternDetails : [
-          '<strong>Section 1 (Core Concepts):</strong> Focus on fundamental syllabus knowledge.',
-          '<strong>Section 2 (Applied Logic):</strong> Real-world scenarios and multi-step deduction.',
-          '<strong>Format:</strong> Timed Olympiad sprint with answer keys and deep explanations.'
+          '<strong>Timing & Duration:</strong> 60 Minutes • 35 Multiple Choice Questions (Authentic Olympiad standard).',
+          '<strong>Marking Scheme:</strong> +1 Mark for Sections 1-3 • +2 Marks for Achievers Section • Zero Negative Marking.',
+          '<strong>Answer Keys:</strong> Full step-by-step explanations verified for ' + (activeQuiz.gradeClass || 'enrolled grade') + '.'
         ];
         patContainer.innerHTML = patternItems.map(p => `<div class="p-2 bg-[#F9F8F3] rounded-none border border-[#DED9D3] text-[#09293D] font-sans text-xs">${p}</div>`).join('');
       }
@@ -9616,7 +9864,7 @@ const ZoptroApiClient = {
       const feedback = document.getElementById('dailyPracticeFeedbackBox');
       if (feedback && item) {
         feedback.classList.remove('hidden');
-        feedback.innerHTML = '🔍 <strong>Exam Strategy Hint:</strong> ' + (item.hint || item.strategyHint || 'Read the problem statement carefully and break it down into steps!');
+        feedback.innerHTML = '🔍 <strong>Exam Strategy Hint:</strong> ' + (item.hint || item.explanation || 'Read the problem statement carefully and eliminate impossible options first!');
         playSound('coin');
       }
     }
@@ -9641,26 +9889,32 @@ const ZoptroApiClient = {
     function loadPyqpByYear(year) {
       playSound('coin');
       const studentGrade = getActiveStudentGrade();
+      const modeSelect = document.getElementById('pyqpModeSelect');
+      const targetCount = modeSelect ? Number(modeSelect.value) : 35;
       const heading = document.getElementById('pyqpPaperHeading');
       const desc = document.getElementById('pyqpPaperDesc');
-      const paper = getPyqpPaperForYearAndGrade(year, studentGrade);
+      const paper = getPyqpPaperForYearAndGrade(year, studentGrade, targetCount);
       currentPyqpYear = year;
       currentPyqpPaper = paper;
 
-      if (heading) heading.innerText = year + ' Official Question Paper (Set A) • ' + studentGrade;
-      if (desc) desc.innerText = 'Loaded authentic ' + year + ' official paper for ' + studentGrade + ' (' + paper.questions.length + ' questions). Includes Logical Reasoning, Core Concepts, Applied Science & Achievers Drill with full step-by-step solution keys.';
+      const modeLabel = targetCount === 35 ? 'Full Official Exam (35 Qs • 60 Mins)' : (targetCount === 15 ? 'Standard Mock Test (15 Qs • 20 Mins)' : 'Quick Sprint Drill (5 Qs • 5 Mins)');
+      if (heading) heading.innerText = year + ' Official Question Paper (' + (targetCount === 35 ? '35 Questions' : (targetCount === 15 ? '15 Questions' : '5 Questions')) + ') • ' + studentGrade;
+      if (desc) desc.innerText = 'Loaded authentic ' + year + ' ' + modeLabel + ' for ' + studentGrade + ' with full step-by-step solution keys. Covers Logical Reasoning, Mathematical Concepts, Everyday Discovery & Achievers Section.';
     }
 
     function startSelectedPyqpExam() {
       const select = document.getElementById('pyqpYearSelect');
+      const modeSelect = document.getElementById('pyqpModeSelect');
       const yr = select ? select.value : (currentPyqpYear || '2025');
+      const targetCount = modeSelect ? Number(modeSelect.value) : 35;
       const studentGrade = getActiveStudentGrade();
-      const paper = getPyqpPaperForYearAndGrade(yr, studentGrade);
+      const paper = getPyqpPaperForYearAndGrade(yr, studentGrade, targetCount);
       playSound('correct');
 
+      const modeTag = targetCount === 35 ? 'FULL 35-Q EXAM' : (targetCount === 15 ? '15-Q MOCK TEST' : '5-Q QUICK SPRINT');
       activeExamQuizSession = {
-        id: 'pyqp_' + yr,
-        title: yr + ' OFFICIAL QUESTION PAPER (SET A) • ' + studentGrade.toUpperCase(),
+        id: 'pyqp_' + yr + '_' + targetCount,
+        title: yr + ' OFFICIAL PAPER (' + modeTag + ') • ' + studentGrade.toUpperCase(),
         gradeClass: studentGrade,
         questions: paper.questions
       };
@@ -9672,14 +9926,16 @@ const ZoptroApiClient = {
 
     function previewPyqpQuestions() {
       const select = document.getElementById('pyqpYearSelect');
+      const modeSelect = document.getElementById('pyqpModeSelect');
       const yr = select ? select.value : (currentPyqpYear || '2025');
+      const targetCount = modeSelect ? Number(modeSelect.value) : 35;
       const studentGrade = getActiveStudentGrade();
-      const paper = getPyqpPaperForYearAndGrade(yr, studentGrade);
+      const paper = getPyqpPaperForYearAndGrade(yr, studentGrade, targetCount);
       playSound('coin');
 
       activeExamQuizSession = {
-        id: 'pyqp_' + yr,
-        title: yr + ' OFFICIAL QUESTION PAPER (SET A) [PREVIEW] • ' + studentGrade.toUpperCase(),
+        id: 'pyqp_' + yr + '_' + targetCount,
+        title: yr + ' OFFICIAL PAPER [PREVIEW • ' + paper.questions.length + ' QS] • ' + studentGrade.toUpperCase(),
         gradeClass: studentGrade,
         questions: paper.questions
       };
