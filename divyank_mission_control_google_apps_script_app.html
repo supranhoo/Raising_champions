@@ -301,6 +301,236 @@
     body #view-dashboard > div:first-child [class~="text-[#9FBACB]"] { color:var(--ice); }
     #boredomLabel { color:#F9A66E; }
     #rewardsGrid .brand-icon { width:28px; height:28px; color:var(--olive); }
+  
+    /* =========================================================================
+       COMPREHENSIVE MULTI-SCREEN RESPONSIVE ADAPTATION (MOBILE -> 4K MONITORS)
+       ========================================================================= */
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      scroll-behavior: smooth;
+    }
+    
+    body {
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100vw;
+    }
+
+    /* Universal responsive container rules */
+    main {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* Touch screen ergonomic tap targets */
+    @media (pointer: coarse) {
+      body button, body select, body input[type="text"], body input[type="password"], body input[type="email"], body input[type="number"] {
+        min-height: 44px;
+      }
+      .tab-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+      }
+    }
+
+    /* Smooth momentum scrolling on mobile with hidden scrollbars */
+    .no-scrollbar::-webkit-scrollbar,
+    .nav-inner::-webkit-scrollbar,
+    #examSelectorPills::-webkit-scrollbar,
+    #newsPillList::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar,
+    .nav-inner,
+    #examSelectorPills,
+    #newsPillList {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Sub-tabs horizontal scrolling */
+    .subtabs-scrollable {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      -webkit-overflow-scrolling: touch;
+      white-space: nowrap;
+    }
+    .subtabs-scrollable::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* Responsive option buttons & cards */
+    #dailyPracticeOptionsContainer button {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Breakpoint Tier 1: Small & Medium Mobile Screens (max-width: 480px) */
+    @media (max-width: 480px) {
+      .brand-masthead {
+        padding: 12px 14px;
+        gap: 10px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .brand-lockup {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .brand-lockup img {
+        width: 145px;
+        max-width: 100%;
+        height: auto;
+      }
+      .account-tools {
+        width: 100%;
+        gap: 8px;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .role-control {
+        flex: 1;
+        justify-content: center;
+      }
+      .role-control button {
+        padding: 7px 10px !important;
+        font-size: 11px !important;
+      }
+      .nav-inner {
+        padding: 6px 12px 0;
+        gap: 3px;
+      }
+      body .app-nav .tab-btn {
+        padding: 8px 12px !important;
+        font-size: 12px !important;
+      }
+      body #main-content {
+        padding: 16px 12px 28px !important;
+      }
+      #pageTitle {
+        font-size: 24px !important;
+        line-height: 1.25;
+      }
+      #pageDescription {
+        font-size: 12px;
+      }
+      .intro-note {
+        margin-top: 10px;
+        font-size: 11px;
+      }
+      /* Progress Strip compact 2x2 grid */
+      .progress-inner {
+        padding: 12px 14px;
+        gap: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .profile-button {
+        grid-column: span 2;
+        gap: 8px;
+      }
+      .wallet-stat {
+        grid-column: span 1;
+      }
+      .level-stat {
+        grid-column: span 1;
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      .streak-stat {
+        grid-column: span 1;
+      }
+      .strip-actions {
+        grid-column: span 2;
+        width: 100%;
+        display: flex;
+        gap: 8px;
+      }
+      .strip-actions button {
+        flex: 1;
+        min-height: 40px;
+        justify-content: center;
+      }
+      /* Card padding on small phones */
+      body main :is(.p-4, .p-5, .p-6) {
+        padding: 16px !important;
+      }
+      /* Modals on small phones */
+      body .fixed > div {
+        padding: 16px !important;
+        max-width: 95vw !important;
+        max-height: 94dvh !important;
+      }
+      /* Quick Jump cards */
+      #pyqpTenCardsGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+      }
+    }
+
+    /* Breakpoint Tier 2: Standard Mobile & Phablets (481px to 768px) */
+    @media (min-width: 481px) and (max-width: 768px) {
+      .brand-masthead {
+        padding: 16px 20px;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .brand-lockup img {
+        width: 165px;
+      }
+      .nav-inner {
+        padding: 8px 16px 0;
+      }
+      body #main-content {
+        padding: 20px 16px 36px !important;
+      }
+      #pageTitle {
+        font-size: 28px !important;
+      }
+      .progress-inner {
+        padding: 14px 20px;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .level-stat {
+        width: 140px;
+      }
+    }
+
+    /* Breakpoint Tier 3: Tablets (769px to 1024px) */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .brand-masthead {
+        padding: 20px 24px;
+      }
+      .nav-inner {
+        padding: 10px 24px 0;
+      }
+      body #main-content {
+        padding: 28px 24px 40px;
+      }
+    }
+
+    /* Breakpoint Tier 4: Large Desktops & Ultrawide (min-width: 1441px) */
+    @media (min-width: 1441px) {
+      .brand-masthead, .nav-inner, .progress-inner, body #main-content {
+        max-width: 1360px;
+      }
+    }
+
+    /* Universal responsive table wrapper */
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
   </style>
 </head>
 
@@ -915,14 +1145,14 @@
       </div>
 
       <!-- Sub-Tabs: 1. Syllabus | 2. Daily Practice | 3. PYQP 2015-2025 Selector -->
-      <div class="flex gap-2 border-b border-[#DED9D3] pb-2 font-sans text-xs">
-        <button id="subTabBtn-syllabus" onclick="switchExamSubTab('syllabus')" class="px-4 py-2 rounded-none font-bold transition bg-[#09293D] text-white ">
+      <div class="flex gap-2 border-b border-[#DED9D3] pb-2 font-sans text-xs overflow-x-auto no-scrollbar scroll-smooth subtabs-scrollable">
+        <button id="subTabBtn-syllabus" onclick="switchExamSubTab('syllabus')" class="px-4 py-2.5 rounded-none font-bold transition bg-[#09293D] text-white whitespace-nowrap flex-shrink-0">
            Syllabus & Exam Blueprint
         </button>
-        <button id="subTabBtn-dailyPractice" onclick="switchExamSubTab('dailyPractice')" class="px-4 py-2 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3]">
+        <button id="subTabBtn-dailyPractice" onclick="switchExamSubTab('dailyPractice')" class="px-4 py-2.5 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3] whitespace-nowrap flex-shrink-0">
            Today's Daily Practice Drill
         </button>
-        <button id="subTabBtn-pyqpList" onclick="switchExamSubTab('pyqpList')" class="px-4 py-2 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3]">
+        <button id="subTabBtn-pyqpList" onclick="switchExamSubTab('pyqpList')" class="px-4 py-2.5 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3] whitespace-nowrap flex-shrink-0">
            Past Year Papers (2015–2025 Selector)
         </button>
       </div>
@@ -989,9 +1219,9 @@
 
             <!-- Dropdown selector (2015 to 2025) & Test Mode -->
             <div class="flex flex-wrap items-center gap-2">
-              <div class="flex items-center space-x-1.5">
-                <label class="text-xs text-[#09293D] font-bold">Year:</label>
-                <select id="pyqpYearSelect" onchange="loadPyqpByYear(this.value)" class="bg-[#F9F8F3] border border-[#DED9D3] text-[#09293D] rounded-none px-2.5 py-1.5 text-xs font-bold focus:outline-none focus:border-[#09293D]">
+              <div class="flex items-center space-x-1.5 w-full sm:w-auto">
+                <label class="text-xs text-[#09293D] font-bold flex-shrink-0">Year:</label>
+                <select id="pyqpYearSelect" onchange="loadPyqpByYear(this.value)" class="bg-[#F9F8F3] border border-[#DED9D3] text-[#09293D] rounded-none px-2.5 py-2 text-xs font-bold focus:outline-none focus:border-[#09293D] w-full sm:w-auto">
                   <option value="2025">2025 Official Paper</option>
                   <option value="2024">2024 Official Paper</option>
                   <option value="2023">2023 Official Paper</option>
@@ -1006,9 +1236,9 @@
                 </select>
               </div>
 
-              <div class="flex items-center space-x-1.5">
-                <label class="text-xs text-[#09293D] font-bold">Test Format:</label>
-                <select id="pyqpModeSelect" onchange="loadPyqpByYear(document.getElementById('pyqpYearSelect').value)" class="bg-[#F9F8F3] border border-[#DED9D3] text-[#09293D] rounded-none px-2.5 py-1.5 text-xs font-bold focus:outline-none focus:border-[#09293D]">
+              <div class="flex items-center space-x-1.5 w-full sm:w-auto">
+                <label class="text-xs text-[#09293D] font-bold flex-shrink-0">Format:</label>
+                <select id="pyqpModeSelect" onchange="loadPyqpByYear(document.getElementById('pyqpYearSelect').value)" class="bg-[#F9F8F3] border border-[#DED9D3] text-[#09293D] rounded-none px-2.5 py-2 text-xs font-bold focus:outline-none focus:border-[#09293D] w-full sm:w-auto">
                   <option value="35" selected>🏆 Full Official Paper (35 Questions • 60 Mins)</option>
                   <option value="15">⏱️ Standard Mock (15 Questions • 20 Mins)</option>
                   <option value="5">⚡ Quick Sprint (5 Questions • 5 Mins)</option>
@@ -9743,9 +9973,9 @@ const ZoptroApiClient = {
       const btnDaily = document.getElementById('subTabBtn-dailyPractice');
       const btnPyqp = document.getElementById('subTabBtn-pyqpList');
 
-      if (btnSyllabus) btnSyllabus.className = (tabName === 'syllabus') ? "px-4 py-2 rounded-none font-bold transition bg-[#09293D] text-white font-sans text-xs" : "px-4 py-2 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3] font-sans text-xs";
-      if (btnDaily) btnDaily.className = (tabName === 'dailyPractice') ? "px-4 py-2 rounded-none font-bold transition bg-[#09293D] text-white font-sans text-xs" : "px-4 py-2 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3] font-sans text-xs";
-      if (btnPyqp) btnPyqp.className = (tabName === 'pyqpList') ? "px-4 py-2 rounded-none font-bold transition bg-[#09293D] text-white font-sans text-xs" : "px-4 py-2 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3] font-sans text-xs";
+      if (btnSyllabus) btnSyllabus.className = (tabName === 'syllabus') ? "px-4 py-2.5 rounded-none font-bold transition bg-[#09293D] text-white font-sans text-xs whitespace-nowrap flex-shrink-0" : "px-4 py-2.5 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3] font-sans text-xs whitespace-nowrap flex-shrink-0";
+      if (btnDaily) btnDaily.className = (tabName === 'dailyPractice') ? "px-4 py-2.5 rounded-none font-bold transition bg-[#09293D] text-white font-sans text-xs whitespace-nowrap flex-shrink-0" : "px-4 py-2.5 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3] font-sans text-xs whitespace-nowrap flex-shrink-0";
+      if (btnPyqp) btnPyqp.className = (tabName === 'pyqpList') ? "px-4 py-2.5 rounded-none font-bold transition bg-[#09293D] text-white font-sans text-xs whitespace-nowrap flex-shrink-0" : "px-4 py-2.5 rounded-none font-bold transition bg-white text-[#09293D] hover:bg-[#F4F2EA] border border-[#DED9D3] font-sans text-xs whitespace-nowrap flex-shrink-0";
 
       const paneSyllabus = document.getElementById('examSubPane-syllabus');
       const paneDaily = document.getElementById('examSubPane-dailyPractice');
