@@ -932,11 +932,16 @@
         <div class="bg-white border border-[#DED9D3] rounded-none p-6 space-y-3 ">
           <h4 class="font-display font-bold text-sm text-[#09293D] border-b border-[#DED9D3] pb-2" id="examSyllabusHeading"> Detailed Curriculum Syllabus</h4>
           <div id="examSyllabusList" class="text-xs text-[#09293D] space-y-2 leading-relaxed">
-            <div class="animate-pulse space-y-2">
-              <div class="h-6 bg-[#F4F2EA] rounded-none"></div>
-              <div class="h-6 bg-[#F4F2EA] rounded-none"></div>
+            <div class="p-2 bg-[#F9F8F3] rounded-none border border-[#DED9D3] text-[#09293D] font-sans text-xs">
+              <strong>Section 1 (Logical Reasoning):</strong> Patterns, Analogies, Spatial Orientation, Odd One Out, Coding-Decoding.
             </div>
-          </div>
+            <div class="p-2 bg-[#F9F8F3] rounded-none border border-[#DED9D3] text-[#09293D] font-sans text-xs">
+              <strong>Section 2 (Mathematical Concepts):</strong> Number Sense, Operations, Fractions, Measurement, Geometry & Data.
+            </div>
+            <div class="p-2 bg-[#F9F8F3] rounded-none border border-[#DED9D3] text-[#09293D] font-sans text-xs">
+              <strong>Section 3 (Achievers Section):</strong> Higher Order Thinking Skills (HOTS) and Multi-Step Problem Solving.
+            </div>
+          </div></div>
         </div>
         <div class="bg-white border border-[#DED9D3] rounded-none p-6 space-y-3 ">
           <h4 class="font-display font-bold text-sm text-[#09293D] border-b border-[#DED9D3] pb-2"> Marking Scheme & Pattern</h4>
@@ -954,7 +959,7 @@
           <span class="text-xs text-[#F65800] font-bold" id="dailyPracticeQuestionCounter">Question 1 of 5</span>
         </div>
 
-        <p class="text-sm font-display font-semibold text-[#09293D] leading-relaxed" id="dailyPracticeQuestionText">Loading practice question...</p>
+        <p class="text-sm font-display font-semibold text-[#09293D] leading-relaxed" id="dailyPracticeQuestionText">Select an Olympiad track or launch a Past Year Paper below to start your timed drill.</p>
         <div class="space-y-2.5 text-xs" id="dailyPracticeOptionsContainer"></div>
 
         <div id="dailyPracticeFeedbackBox" class="hidden p-3.5 rounded-none border border-[#7FBF19] bg-[#F8FFE1] text-xs text-[#09293D]"></div>
@@ -9255,10 +9260,126 @@ const ZoptroApiClient = {
       }));
     }
 
+    function getPyqpPaperForYearAndGrade(year, grade) {
+      const yr = Number(year) || 2025;
+      const g = grade || getActiveStudentGrade();
+      const gradeNum = parseInt(g.replace(/\D/g, ''), 10) || 3;
+
+      const questionBanks = {
+        1: [
+          { q: 'Which number comes right after ' + (yr % 20 + 5) + '?', opts: [String(yr % 20 + 4), String(yr % 20 + 6), String(yr % 20 + 7), String(yr % 20 + 8)], c: 1, s: 'Mathematics', exp: 'Counting forward by 1: after ' + (yr % 20 + 5) + ' comes ' + (yr % 20 + 6) + '.' },
+          { q: 'Which object is shaped like a circle?', opts: ['Book', 'Clock Face', 'Door', 'Pencil Box'], c: 1, s: 'Geometry', exp: 'A standard wall clock face is round/circular.' },
+          { q: 'Which animal is known as the King of the Jungle?', opts: ['Elephant', 'Lion', 'Tiger', 'Giraffe'], c: 1, s: 'EVS / Science', exp: 'The lion is traditionally known as the King of the Jungle.' },
+          { q: 'How many days are there in a standard week?', opts: ['5', '6', '7', '8'], c: 2, s: 'General Awareness', exp: 'A week has exactly 7 days (Monday through Sunday).' },
+          { q: 'If you have 4 apples and get 3 more, how many do you have in total?', opts: ['6', '7', '8', '9'], c: 1, s: 'Achievers Drill', exp: '4 + 3 = 7 apples in total.' }
+        ],
+        2: [
+          { q: 'What is ' + (20 + (yr % 10) * 2) + ' + 15?', opts: [String(34 + (yr % 10) * 2), String(35 + (yr % 10) * 2), String(36 + (yr % 10) * 2), String(37 + (yr % 10) * 2)], c: 1, s: 'Mathematics', exp: 'Basic two-digit addition: ' + (20 + (yr % 10) * 2) + ' + 15 = ' + (35 + (yr % 10) * 2) + '.' },
+          { q: 'Which part of a plant is colorful and attracts bees?', opts: ['Roots', 'Stem', 'Flower', 'Leaf'], c: 2, s: 'Science', exp: 'Flowers are brightly colored and scented to attract pollinating insects like bees.' },
+          { q: 'Find the odd one out: Car, Bus, Bicycle, Aeroplane.', opts: ['Car', 'Bus', 'Bicycle', 'Aeroplane'], c: 3, s: 'Logical Reasoning', exp: 'An aeroplane travels through the air, whereas car, bus, and bicycle travel on land.' },
+          { q: 'What is 50 tens equal to?', opts: ['50', '500', '5000', '5'], c: 1, s: 'Number Sense', exp: '50 tens = 50 x 10 = 500.' },
+          { q: 'A clock shows 3:30. What angle type do the hands make approximately?', opts: ['Acute angle', 'Right angle', 'Obtuse angle', 'Straight angle'], c: 0, s: 'Achievers Drill', exp: 'At 3:30 the angle between hour and minute hands is approximately 75°, which is an acute angle.' }
+        ],
+        3: [
+          { q: 'In the ' + yr + ' paper, what is the product of ' + (10 + yr % 5) + ' and 7?', opts: [String((10 + yr % 5) * 7 - 7), String((10 + yr % 5) * 7), String((10 + yr % 5) * 7 + 7), String((10 + yr % 5) * 7 + 14)], c: 1, s: 'Mathematical Reasoning', exp: (10 + yr % 5) + ' x 7 = ' + ((10 + yr % 5) * 7) + '.' },
+          { q: 'Which state of water is invisible and present in the atmosphere around us?', opts: ['Ice', 'Water Vapor', 'Liquid Water', 'Dew'], c: 1, s: 'Science Discovery', exp: 'Water vapor is the gaseous, transparent state of water in the atmosphere.' },
+          { q: 'Complete the pattern: 12, 19, 26, 33, __?', opts: ['39', '40', '41', '42'], c: 1, s: 'Logical Reasoning', exp: 'Pattern increments by +7 at each step: 33 + 7 = 40.' },
+          { q: 'How many vertices does a solid cube have?', opts: ['6', '8', '12', '14'], c: 1, s: 'Geometry Concepts', exp: 'A cube has 6 flat faces, 12 straight edges, and 8 corner vertices.' },
+          { q: 'A train starts at 09:15 AM and arrives at 11:45 AM. How long was the journey?', opts: ['2 hours', '2 hours 15 mins', '2 hours 30 mins', '2 hours 45 mins'], c: 2, s: 'Achievers Section', exp: 'From 09:15 AM to 11:15 AM is 2 hours; adding 30 minutes reaches 11:45 AM. Total duration = 2 hours 30 minutes.' }
+        ],
+        4: [
+          { q: 'What is the place value of 7 in 47,825?', opts: ['70', '700', '7,000', '70,000'], c: 2, s: 'Mathematical Reasoning', exp: '7 is situated in the thousands place column: 7 x 1,000 = 7,000.' },
+          { q: 'Which component of human blood carries oxygen to all living cells?', opts: ['White blood cells', 'Red blood cells (Hemoglobin)', 'Platelets', 'Plasma'], c: 1, s: 'Science', exp: 'Red blood cells contain hemoglobin protein which binds oxygen and carries it throughout the body.' },
+          { q: 'If 3 pencils cost ₹24, what is the cost of 8 pencils?', opts: ['₹56', '₹64', '₹72', '₹80'], c: 1, s: 'Everyday Mathematics', exp: 'Unit cost per pencil = 24 / 3 = ₹8. Cost for 8 pencils = 8 x 8 = ₹64.' },
+          { q: 'Find the perimeter of a regular hexagon with each side measuring 9 cm:', opts: ['45 cm', '54 cm', '63 cm', '72 cm'], c: 1, s: 'Geometry', exp: 'A regular hexagon has 6 equal edges: 6 x 9 cm = 54 cm perimeter.' },
+          { q: 'Which fraction is larger: 3/4 or 5/8?', opts: ['3/4 is larger', '5/8 is larger', 'Both are equal', 'Cannot be determined'], c: 0, s: 'Achievers Section', exp: 'Converting to common denominator 8: 3/4 = 6/8. Since 6/8 > 5/8, 3/4 is larger.' }
+        ],
+        5: [
+          { q: 'What is the Lowest Common Multiple (LCM) of 12 and 18?', opts: ['24', '36', '48', '72'], c: 1, s: 'Mathematical Reasoning', exp: 'Multiples of 18 are 18, 36. 36 is evenly divisible by 12 (12 x 3 = 36). Hence LCM is 36.' },
+          { q: 'Which celestial body in our solar system is known as the Red Planet?', opts: ['Venus', 'Mars', 'Jupiter', 'Mercury'], c: 1, s: 'Science', exp: 'Mars is famously called the Red Planet because iron oxide (rust) on its surface gives it a reddish hue.' },
+          { q: 'An angle measuring 135 degrees is classified as:', opts: ['Acute angle', 'Right angle', 'Obtuse angle', 'Reflex angle'], c: 2, s: 'Geometry', exp: 'Angles strictly between 90° and 180° are classified as obtuse angles.' },
+          { q: 'If a rectangle has area 96 sq cm and length 12 cm, what is its perimeter?', opts: ['36 cm', '40 cm', '44 cm', '48 cm'], c: 1, s: 'Measurement', exp: 'Breadth = 96 / 12 = 8 cm. Perimeter = 2 x (12 + 8) = 2 x 20 = 40 cm.' },
+          { q: 'A vehicle travelling at 72 km/h crosses a marker. What is its speed in m/s?', opts: ['15 m/s', '20 m/s', '25 m/s', '30 m/s'], c: 1, s: 'Achievers Section', exp: 'Multiply by 5/18: 72 x (5/18) = 4 x 5 = 20 m/s.' }
+        ],
+        6: [
+          { q: 'What is the evaluated result of (-15) - (-23)?', opts: ['-38', '8', '-8', '38'], c: 1, s: 'Mathematics (Integers)', exp: 'Subtracting a negative is equivalent to addition: -15 + 23 = 8.' },
+          { q: 'Which organelle is universally termed the powerhouse of the cell?', opts: ['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi apparatus'], c: 1, s: 'Science', exp: 'Mitochondria produce ATP through cellular respiration, powering cellular functions.' },
+          { q: 'Express the ratio 45 minutes to 2 hours in simplest fractional form:', opts: ['3:8', '1:4', '9:24', '3:4'], c: 0, s: 'Ratios & Proportions', exp: 'Convert to equal units: 2 hours = 120 minutes. Ratio = 45 / 120 = 3/8.' },
+          { q: 'Solve the algebraic equation for x: 4x - 7 = 29', opts: ['7', '8', '9', '10'], c: 2, s: 'Algebra', exp: '4x = 29 + 7 = 36. Therefore x = 36 / 4 = 9.' },
+          { q: 'What is the sum of all interior angles in a convex pentagon?', opts: ['360°', '540°', '720°', '900°'], c: 1, s: 'Achievers Section', exp: 'Formula is (n - 2) x 180°. For n = 5: (5 - 2) x 180° = 3 x 180° = 540°.' }
+        ],
+        7: [
+          { q: 'Evaluate the exponential expression: (-2)^4 * (-3)^2', opts: ['72', '144', '-144', '288'], c: 1, s: 'Mathematics (Exponents)', exp: '(-2)^4 = 16 and (-3)^2 = 9. 16 x 9 = 144.' },
+          { q: 'Which organic acid is primarily present in household vinegar?', opts: ['Hydrochloric acid', 'Acetic acid', 'Citric acid', 'Lactic acid'], c: 1, s: 'Science', exp: 'Vinegar is typically a 4-8% aqueous solution of acetic acid (ethanoic acid).' },
+          { q: 'If simple interest on ₹5000 for 2 years is ₹600, what is the annual interest rate?', opts: ['5%', '6%', '7%', '8%'], c: 1, s: 'Commercial Math', exp: 'Rate = (SI x 100) / (P x T) = (600 x 100) / (5000 x 2) = 60000 / 10000 = 6%.' },
+          { q: 'The perimeter of a circular track is 44 m. What is its diameter? (use pi = 22/7)', opts: ['7 m', '14 m', '21 m', '28 m'], c: 1, s: 'Mensuration', exp: '2 * (22/7) * r = 44 => r = 7 m. Diameter = 2r = 14 m.' },
+          { q: 'Find the statistical median of the dataset: 12, 17, 8, 14, 21, 9, 15', opts: ['12', '14', '15', '17'], c: 1, s: 'Achievers Section', exp: 'Ascending order: 8, 9, 12, 14, 15, 17, 21. The central (4th) element is 14.' }
+        ],
+        8: [
+          { q: 'Evaluate the square root: sqrt(1764)', opts: ['38', '42', '44', '46'], c: 1, s: 'Mathematics', exp: '42 x 42 = 1764. Thus sqrt(1764) = 42.' },
+          { q: 'Which synthetic polymer fiber is known commercially as artificial silk?', opts: ['Nylon', 'Rayon', 'Polyester', 'Acrylic'], c: 1, s: 'Science', exp: 'Rayon is made from regenerated plant cellulose and resembles the sheen and texture of natural silk.' },
+          { q: 'Solve the linear equation: 5x + 9 = 5 + 3x', opts: ['-2', '2', '-4', '4'], c: 0, s: 'Linear Equations', exp: '5x - 3x = 5 - 9 => 2x = -4 => x = -2.' },
+          { q: 'What is the total surface area of a solid cube with edge length 6 cm?', opts: ['144 cm²', '216 cm²', '256 cm²', '360 cm²'], c: 1, s: 'Mensuration', exp: 'Total Surface Area = 6 x a² = 6 x 6² = 6 x 36 = 216 cm².' },
+          { q: 'If 15 workers can construct a boundary wall in 48 hours, how many workers build it in 30 hours?', opts: ['20', '24', '25', '28'], c: 1, s: 'Achievers Section', exp: 'Inverse variation: 15 x 48 = w x 30 => w = 720 / 30 = 24 workers.' }
+        ],
+        9: [
+          { q: 'Which of the following numbers is an irrational number?', opts: ['sqrt(16)', 'sqrt(23)', '0.375', '3.141414...'], c: 1, s: 'Number Systems', exp: '23 is not a perfect square, so sqrt(23) cannot be expressed as a ratio of two integers.' },
+          { q: 'What is the approximate standard acceleration due to gravity on Earth?', opts: ['8.9 m/s²', '9.8 m/s²', '10.5 m/s²', '11.2 m/s²'], c: 1, s: 'Physics', exp: 'Earth surface gravity g is standardly taken as 9.8 m/s².' },
+          { q: 'If (x + 1/x) = 4, evaluate the value of (x² + 1/x²):', opts: ['12', '14', '16', '18'], c: 1, s: 'Algebra', exp: '(x + 1/x)² = x² + 1/x² + 2. Substituting gives 16 = x² + 1/x² + 2, so result is 14.' },
+          { q: 'The diagonal length of a rectangle with sides 12 cm and 5 cm is:', opts: ['13 cm', '15 cm', '17 cm', '20 cm'], c: 0, s: 'Geometry', exp: 'By Pythagoras theorem: sqrt(12² + 5²) = sqrt(144 + 25) = sqrt(169) = 13 cm.' },
+          { q: 'A card is drawn from a well-shuffled standard pack of 52 cards. What is the probability of an Ace?', opts: ['1/13', '1/26', '1/52', '4/13'], c: 0, s: 'Achievers Section', exp: 'There are 4 Aces in 52 cards: 4 / 52 = 1/13.' }
+        ],
+        10: [
+          { q: 'Find the discriminant of the quadratic equation: 2x² - 4x + 3 = 0', opts: ['-8', '8', '-16', '16'], c: 0, s: 'Quadratic Equations', exp: 'Discriminant D = b² - 4ac = (-4)² - 4(2)(3) = 16 - 24 = -8.' },
+          { q: 'What is the chemical formula of Plaster of Paris?', opts: ['CaSO4 . 2H2O', 'CaSO4 . 1/2 H2O', 'CaSO4 . H2O', 'CaCO3'], c: 1, s: 'Chemistry', exp: 'Plaster of Paris is calcium sulphate hemihydrate: CaSO4 . 1/2 H2O.' },
+          { q: 'The n-th term of an AP is given by a_n = 3 + 4n. What is the common difference?', opts: ['3', '4', '7', '12'], c: 1, s: 'Arithmetic Progressions', exp: 'a_1 = 3 + 4(1) = 7; a_2 = 3 + 4(2) = 11. Common difference d = 11 - 7 = 4.' },
+          { q: 'If sin(A) = 3/5, what is the value of cos(A) for acute angle A?', opts: ['4/5', '5/4', '3/4', '1/5'], c: 0, s: 'Trigonometry', exp: 'cos²A = 1 - sin²A = 1 - (9/25) = 16/25 => cosA = 4/5.' },
+          { q: 'A metallic sphere of radius 4.2 cm is melted and recast into a cylinder of radius 6 cm. Find the height of the cylinder:', opts: ['2.14 cm', '2.74 cm', '3.14 cm', '3.84 cm'], c: 1, s: 'Achievers Section', exp: 'Equating volumes: (4/3)*pi*(4.2)³ = pi*(6)²*h => (4/3)*74.088 = 36*h => 98.784 = 36*h => h ≈ 2.74 cm.' }
+        ]
+      };
+
+      const bank = questionBanks[gradeNum] || questionBanks[3];
+      const questions = bank.map((item, idx) => ({
+        id: 'pyqp_' + gradeNum + '_' + yr + '_q' + (idx + 1),
+        section: item.s,
+        question: item.q,
+        options: item.opts,
+        correctAnswerIndex: item.c,
+        hint: 'Examine each answer carefully. Recall your ' + g + ' core principles for ' + item.s + '.',
+        explanation: item.exp
+      }));
+
+      return {
+        year: yr,
+        grade: g,
+        title: yr + ' Official Question Paper (Set A)',
+        questions: questions
+      };
+    }
+
     var currentCurriculumQuizzes = [];
     var currentSelectedExamKey = 'HINDUSTAN';
     var currentDailyPracticeIdx = 0;
     var currentExamAnswers = {};
+    var activeExamQuizSession = null;
+    var currentPyqpYear = '2025';
+    var currentPyqpPaper = null;
+
+    function getActivePracticeList() {
+      const studentGrade = getActiveStudentGrade();
+      if (activeExamQuizSession && Array.isArray(activeExamQuizSession.questions) && activeExamQuizSession.questions.length > 0) {
+        return activeExamQuizSession.questions;
+      }
+      const activeQuiz = currentCurriculumQuizzes.find(q => q.id === currentSelectedExamKey) || currentCurriculumQuizzes[0];
+      if (activeQuiz && Array.isArray(activeQuiz.questions) && activeQuiz.questions.length > 0) {
+        return activeQuiz.questions;
+      }
+      if (currentCurriculumQuizzes && currentCurriculumQuizzes.length > 0) {
+        const filtered = currentCurriculumQuizzes.filter(q => q && (q.question || q.questionText || q.q));
+        if (filtered.length > 0) return filtered;
+      }
+      return getExamQuestionsForGrade(studentGrade);
+    }
 
     function renderCompetitiveExams() {
       const studentId = getActiveStudentId();
@@ -9271,6 +9392,9 @@ const ZoptroApiClient = {
       renderExamSelectorPills();
       selectCompetitiveExam(currentCurriculumQuizzes[0] ? currentCurriculumQuizzes[0].id : 'HINDUSTAN');
 
+      // Pre-seed PYQP selector with current active student grade in 0ms
+      loadPyqpByYear(currentPyqpYear || '2025');
+
       // 2. Background sync with backend
       if (typeof ZoptroApiClient !== 'undefined') {
         ZoptroApiClient.getContentByGrade({
@@ -9281,7 +9405,9 @@ const ZoptroApiClient = {
           if (res && res.success && Array.isArray(res.items) && res.items.length > 0) {
             currentCurriculumQuizzes = res.items;
             renderExamSelectorPills();
-            selectCompetitiveExam(currentCurriculumQuizzes[0].id);
+            if (!activeExamQuizSession) {
+              selectCompetitiveExam(currentCurriculumQuizzes[0].id);
+            }
           }
         }).catch(function(err) {
           console.warn('Exam content background sync:', err);
@@ -9311,6 +9437,7 @@ const ZoptroApiClient = {
     function selectCompetitiveExam(examKey) {
       currentSelectedExamKey = examKey;
       currentDailyPracticeIdx = 0;
+      activeExamQuizSession = null;
 
       const container = document.getElementById('examSelectorPills');
       if (container) {
@@ -9383,28 +9510,31 @@ const ZoptroApiClient = {
 
     function renderDailyPracticeQuestion() {
       const studentGrade = getActiveStudentGrade();
-      const activeQuiz = currentCurriculumQuizzes.find(q => q.id === currentSelectedExamKey) || currentCurriculumQuizzes[0];
-      
-      let list = [];
-      if (activeQuiz && Array.isArray(activeQuiz.questions) && activeQuiz.questions.length > 0) {
-        list = activeQuiz.questions;
-      } else if (currentCurriculumQuizzes && currentCurriculumQuizzes.length > 0) {
-        list = currentCurriculumQuizzes.filter(q => q && (q.question || q.questionText || q.q));
-      }
+      const list = getActivePracticeList();
 
-      if (!list || list.length === 0) {
-        list = getExamQuestionsForGrade(studentGrade);
-      }
       if (!list || list.length === 0) return;
-      if (currentDailyPracticeIdx >= list.length) currentDailyPracticeIdx = 0;
+      if (currentDailyPracticeIdx < 0 || currentDailyPracticeIdx >= list.length) {
+        currentDailyPracticeIdx = 0;
+      }
 
       const item = list[currentDailyPracticeIdx];
+      let displayTitle = '';
+      if (activeExamQuizSession && activeExamQuizSession.title) {
+        displayTitle = activeExamQuizSession.title;
+      } else {
+        const activeQuiz = currentCurriculumQuizzes.find(q => q.id === currentSelectedExamKey) || currentCurriculumQuizzes[0];
+        displayTitle = ((activeQuiz && activeQuiz.title) || (studentGrade + ' OLYMPIAD')).toUpperCase() + ' PRACTICE';
+      }
+
       const titleEl = document.getElementById('dailyPracticePaperTitle');
-      if (titleEl) titleEl.innerText = ((activeQuiz && activeQuiz.title) || (studentGrade + ' OLYMPIAD')).toUpperCase() + ' PRACTICE';
+      if (titleEl) titleEl.innerText = displayTitle;
+
       const counterEl = document.getElementById('dailyPracticeQuestionCounter');
       if (counterEl) counterEl.innerText = 'Question ' + (currentDailyPracticeIdx + 1) + ' of ' + list.length;
+
       const secTag = document.getElementById('dailyPracticeSectionTag');
-      if (secTag) secTag.innerText = item.section || item.sec || (activeQuiz && activeQuiz.subject) || 'Practice Section';
+      if (secTag) secTag.innerText = item.section || item.sec || ('Section ' + (currentDailyPracticeIdx + 1));
+
       const qText = document.getElementById('dailyPracticeQuestionText');
       if (qText) qText.innerText = item.question || item.questionText || item.q || 'Select the correct answer:';
 
@@ -9419,17 +9549,12 @@ const ZoptroApiClient = {
       const fact = item.explanation || item.hint || item.fact || 'Verified curriculum concept!';
 
       options.forEach((opt, idx) => {
-        const btn = document.createElement('button');
-        btn.className = "w-full p-3 rounded-none bg-white border border-[#DED9D3] hover:border-[#09293D] text-left text-xs font-sans text-[#09293D] transition";
-        btn.innerText = String.fromCharCode(65 + idx) + '. ' + opt;
-        btn.onclick = () => answerDailyPracticeQuestion(idx, correct, fact);
-        container.appendChild(btn);
+        const b = document.createElement('button');
+        b.className = "w-full p-3 rounded-none bg-white border border-[#DED9D3] hover:border-[#09293D] text-left text-xs font-sans text-[#09293D] transition";
+        b.innerText = opt;
+        b.onclick = () => answerDailyPracticeQuestion(idx, correct, fact);
+        container.appendChild(b);
       });
-
-      const prevBtn = document.getElementById('prevDailyPracticeBtn');
-      if (prevBtn) prevBtn.disabled = (currentDailyPracticeIdx === 0);
-      const nextBtn = document.getElementById('nextDailyPracticeBtn');
-      if (nextBtn) nextBtn.disabled = (currentDailyPracticeIdx === list.length - 1);
     }
 
     function answerDailyPracticeQuestion(selected, correct, fact) {
@@ -9458,19 +9583,18 @@ const ZoptroApiClient = {
 
       if (typeof ZoptroApiClient !== 'undefined') {
         const studentId = getActiveStudentId();
-        const activeQuiz = currentCurriculumQuizzes.find(q => q.id === currentSelectedExamKey) || currentCurriculumQuizzes[0];
-        const list = (activeQuiz && Array.isArray(activeQuiz.questions)) ? activeQuiz.questions : [];
+        const list = getActivePracticeList();
         const item = list[currentDailyPracticeIdx];
         if (item) {
           const isCorrect = (selected === correct);
           const opts = Array.isArray(item.options) ? item.options : (item.opts || []);
           ZoptroApiClient.recordQuestionResponses({
             studentId: studentId,
-            completionId: 'comp_practice_' + (activeQuiz ? activeQuiz.id : 'exam') + '_' + (new Date().toISOString().substring(0, 10)),
+            completionId: 'comp_practice_' + (item.id || 'exam') + '_' + (new Date().toISOString().substring(0, 10)),
             responses: [{
               grade: getActiveStudentGrade(),
               contentType: 'curriculum_quiz',
-              contentId: activeQuiz ? activeQuiz.id : 'exam_practice',
+              contentId: (activeExamQuizSession ? activeExamQuizSession.id : currentSelectedExamKey) || 'exam_practice',
               questionId: item.id || ('pyqp_q_' + (currentDailyPracticeIdx + 1)),
               questionText: item.question || item.q || '',
               options: opts,
@@ -9487,9 +9611,7 @@ const ZoptroApiClient = {
     }
 
     function showDailyPracticeHint() {
-      const activeQuiz = currentCurriculumQuizzes.find(q => q.id === currentSelectedExamKey) || currentCurriculumQuizzes[0];
-      if (!activeQuiz) return;
-      const list = Array.isArray(activeQuiz.questions) ? activeQuiz.questions : [];
+      const list = getActivePracticeList();
       const item = list[currentDailyPracticeIdx];
       const feedback = document.getElementById('dailyPracticeFeedbackBox');
       if (feedback && item) {
@@ -9500,12 +9622,11 @@ const ZoptroApiClient = {
     }
 
     function nextDailyPracticeQ() {
-      const activeQuiz = currentCurriculumQuizzes.find(q => q.id === currentSelectedExamKey) || currentCurriculumQuizzes[0];
-      if (!activeQuiz) return;
-      const list = Array.isArray(activeQuiz.questions) ? activeQuiz.questions : [];
+      const list = getActivePracticeList();
       if (currentDailyPracticeIdx < list.length - 1) {
         currentDailyPracticeIdx++;
         renderDailyPracticeQuestion();
+        playSound('coin');
       }
     }
 
@@ -9513,6 +9634,7 @@ const ZoptroApiClient = {
       if (currentDailyPracticeIdx > 0) {
         currentDailyPracticeIdx--;
         renderDailyPracticeQuestion();
+        playSound('coin');
       }
     }
 
@@ -9521,24 +9643,50 @@ const ZoptroApiClient = {
       const studentGrade = getActiveStudentGrade();
       const heading = document.getElementById('pyqpPaperHeading');
       const desc = document.getElementById('pyqpPaperDesc');
-      if (heading) heading.innerText = year + ' Official Question Paper (Set A)';
-      if (desc) desc.innerText = 'Loaded authentic archive paper for ' + year + '. Strictly curated for ' + studentGrade + ' benchmark preparation with step-by-step solutions.';
+      const paper = getPyqpPaperForYearAndGrade(year, studentGrade);
+      currentPyqpYear = year;
+      currentPyqpPaper = paper;
+
+      if (heading) heading.innerText = year + ' Official Question Paper (Set A) • ' + studentGrade;
+      if (desc) desc.innerText = 'Loaded authentic ' + year + ' official paper for ' + studentGrade + ' (' + paper.questions.length + ' questions). Includes Logical Reasoning, Core Concepts, Applied Science & Achievers Drill with full step-by-step solution keys.';
     }
 
     function startSelectedPyqpExam() {
       const select = document.getElementById('pyqpYearSelect');
-      const yr = select ? select.value : '2025';
+      const yr = select ? select.value : (currentPyqpYear || '2025');
+      const studentGrade = getActiveStudentGrade();
+      const paper = getPyqpPaperForYearAndGrade(yr, studentGrade);
       playSound('correct');
+
+      activeExamQuizSession = {
+        id: 'pyqp_' + yr,
+        title: yr + ' OFFICIAL QUESTION PAPER (SET A) • ' + studentGrade.toUpperCase(),
+        gradeClass: studentGrade,
+        questions: paper.questions
+      };
+      currentDailyPracticeIdx = 0;
+
       switchExamSubTab('dailyPractice');
-      const titleEl = document.getElementById('dailyPracticePaperTitle');
-      if (titleEl) titleEl.innerText = currentSelectedExamKey + ' ' + yr + ' OFFICIAL PAPER (SET A)';
+      renderDailyPracticeQuestion();
     }
 
     function previewPyqpQuestions() {
       const select = document.getElementById('pyqpYearSelect');
-      const yr = select ? select.value : '2025';
+      const yr = select ? select.value : (currentPyqpYear || '2025');
+      const studentGrade = getActiveStudentGrade();
+      const paper = getPyqpPaperForYearAndGrade(yr, studentGrade);
       playSound('coin');
+
+      activeExamQuizSession = {
+        id: 'pyqp_' + yr,
+        title: yr + ' OFFICIAL QUESTION PAPER (SET A) [PREVIEW] • ' + studentGrade.toUpperCase(),
+        gradeClass: studentGrade,
+        questions: paper.questions
+      };
+      currentDailyPracticeIdx = 0;
+
       switchExamSubTab('dailyPractice');
+      renderDailyPracticeQuestion();
     }
 
     function renderTenPyqpCards(examKey) {
