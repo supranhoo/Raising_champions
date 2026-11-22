@@ -7747,11 +7747,26 @@ const ZoptroApiClient = {
     ];
 
     function getActiveStudentId() {
-      return activeChildId || (currentUser && currentUser.id) || 'u_stu_demo';
+      if (currentUser && currentUser.role === 'student' && currentUser.id) {
+        return currentUser.id;
+      }
+      if (linkedChildren && linkedChildren.length > 0) {
+        const found = linkedChildren.find(c => c.id === activeChildId);
+        if (found) return found.id;
+        return linkedChildren[0].id;
+      }
+      return activeChildId || 'u_stu_demo';
     }
 
     function getActiveStudentProfile() {
+      if (currentUser && currentUser.role === 'student' && currentUser.id) {
+        return currentUser;
+      }
       const studentId = getActiveStudentId();
+      if (linkedChildren && linkedChildren.length > 0) {
+        const found = linkedChildren.find(c => c.id === studentId);
+        if (found) return found;
+      }
       let users = [];
       if (typeof BrowserMockBackend !== 'undefined' && BrowserMockBackend.KEYS) {
         users = BrowserMockBackend._getTable(BrowserMockBackend.KEYS.USERS);
@@ -7760,17 +7775,17 @@ const ZoptroApiClient = {
         const found = users.find(u => u.id === studentId);
         if (found) return found;
       }
-      if (linkedChildren && linkedChildren.length > 0) {
-        const found = linkedChildren.find(c => c.id === studentId);
-        if (found) return found;
-      }
       const foundDefault = DEFAULT_STUDENT_PROFILES.find(p => p.id === studentId);
       return foundDefault || DEFAULT_STUDENT_PROFILES[0];
     }
 
     function getActiveStudentGrade() {
+      if (currentUser && currentUser.role === 'student') {
+        const g = currentUser.gradeClass || currentUser.grade;
+        if (g) return g;
+      }
       const profile = getActiveStudentProfile();
-      return (profile && profile.gradeClass) ? profile.gradeClass : 'Class 3';
+      return (profile && (profile.gradeClass || profile.grade)) ? (profile.gradeClass || profile.grade) : 'Class 3';
     }
 
     function refreshDynamicContentForActiveChild() {
@@ -7832,6 +7847,13 @@ const ZoptroApiClient = {
             const parsed = JSON.parse(raw);
             if (parsed && parsed.user) {
               currentUser = parsed.user;
+              if (parsed.activeChildId) activeChildId = parsed.activeChildId;
+              if (Array.isArray(parsed.linkedChildren) && parsed.linkedChildren.length > 0) {
+                linkedChildren = parsed.linkedChildren;
+              }
+              if (currentUser.role === 'student' && currentUser.id) {
+                activeChildId = currentUser.id;
+              }
               if (currentUser.coins !== undefined) focusCoins = Number(currentUser.coins) || focusCoins;
               if (currentUser.xp !== undefined) commanderXP = Number(currentUser.xp) || commanderXP;
               if (currentUser.streak !== undefined) currentStreak = Number(currentUser.streak) || currentStreak;
@@ -7849,13 +7871,19 @@ const ZoptroApiClient = {
       updateAuthUI();
     }
 
-    function saveAuthSession(user, token) {
+    function saveAuthSession(user, token, children) {
       currentUser = user;
+      if (children && Array.isArray(children)) {
+        linkedChildren = children;
+        if (children.length > 0) activeChildId = children[0].id;
+      }
       try {
         if (typeof window !== 'undefined' && window.localStorage) {
           window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
             token: token || ('tok_' + user.id + '_' + Date.now()),
-            user: user
+            user: user,
+            activeChildId: activeChildId,
+            linkedChildren: linkedChildren
           }));
         }
       } catch (e) {}
@@ -8118,8 +8146,10 @@ const ZoptroApiClient = {
           } else if (res.user.role === 'parent') {
             activateParentRole();
           } else {
+            activeChildId = res.user.id;
             activateStudentRole();
             loadStudentQuestsAndHUD(res.user.id);
+            refreshDynamicContentForActiveChild();
           }
           alertCustom("Authenticated ✅", `Welcome back, ${res.user.fullName}! Logged in as ${res.user.role}.`);
         } else {
@@ -8379,12 +8409,14 @@ const ZoptroApiClient = {
         const profiles = (linkedChildren && linkedChildren.length > 0) ? linkedChildren : DEFAULT_STUDENT_PROFILES;
         const targetChild = profiles.find(c => c.id === activeChildId) || profiles[0];
         currentUser = Object.assign({ role: 'student' }, targetChild);
+        activeChildId = targetChild.id;
         focusCoins = Number(currentUser.coins) || 0;
         commanderXP = Number(currentUser.xp) || 0;
         currentStreak = Number(currentUser.streak) || 0;
         currentAvatar = currentUser.avatar || '🚀';
         updateAuthUI();
       } else if (currentUser && currentUser.role === 'student') {
+        activeChildId = currentUser.id;
         focusCoins = Number(currentUser.coins) || 0;
         commanderXP = Number(currentUser.xp) || 0;
         currentStreak = Number(currentUser.streak) || 0;
@@ -8399,6 +8431,7 @@ const ZoptroApiClient = {
       switchTab('dashboard');
       updateGamificationUI();
       renderHabits();
+      refreshDynamicContentForActiveChild();
     }
 
     function activateParentRole() {
@@ -13757,7 +13790,7 @@ const ZoptroApiClient = {
           playSound('correct');
           spawnConfetti();
 
-          saveAuthSession(res.parent, res.token);
+          saveAuthSession(res.parent, res.token, res.children);
 
           if (Array.isArray(res.children) && res.children.length > 0) {
             linkedChildren = res.children;
