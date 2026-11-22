@@ -25,7 +25,7 @@
  * =========================================================================
  */
 
-const APP_TITLE = "Zoptro - Optra360 Dual-User Mission Control";
+const APP_TITLE = "Zoptro Kids - Optra360 Dual-User Mission Control";
 
 // Brand Design System Color Constants for Google Sheets
 const BRAND_COLORS = {
