@@ -1505,12 +1505,17 @@ function getLinkedStudents(payload) {
       return {
         id: String(u.id),
         fullName: String(u.fullName || ""),
+        role: String(u.role || "student"),
+        gradeClass: String(u.gradeClass || "Class 3"),
+        grade: String(u.gradeClass || "Class 3"),
+        age: (u.age !== undefined && u.age !== null && u.age !== "") ? Number(u.age) : 8,
         coins: Number(u.coins) || 0,
         xp: Number(u.xp) || 0,
         level: Number(u.level) || 1,
         streak: Number(u.streak) || 0,
         createdAt: String(u.createdAt || ""),
-        lastLoginAt: String(u.lastLoginAt || "")
+        lastLoginAt: String(u.lastLoginAt || ""),
+        parentalPermissions: u.parentalPermissions || "{}"
       };
     });
 

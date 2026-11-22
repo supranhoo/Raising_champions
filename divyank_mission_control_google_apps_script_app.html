@@ -9185,6 +9185,76 @@ const ZoptroApiClient = {
     // ==========================================
     // DYNAMIC CURRICULUM QUIZZES & PYQP MODULE
     // ==========================================
+    const DEFAULT_EXAM_QUESTIONS_BY_GRADE = {
+      'Class 1': [
+        { id: 'c1_q1', title: 'Single Digit Addition', section: 'Mathematics', question: 'What is 5 + 3?', options: ['7', '8', '9', '6'], correctAnswerIndex: 1, explanation: 'Count 3 past 5: 5 + 3 = 8.' },
+        { id: 'c1_q2', title: 'Farm Animals', section: 'EVS', question: 'Which animal gives us milk?', options: ['Dog', 'Cow', 'Lion', 'Cat'], correctAnswerIndex: 1, explanation: 'Cows give us fresh and healthy milk.' },
+        { id: 'c1_q3', title: 'Shapes & Sizes', section: 'Logical Reasoning', question: 'How many sides does a triangle have?', options: ['2', '3', '4', '5'], correctAnswerIndex: 1, explanation: 'A triangle always has exactly 3 sides.' }
+      ],
+      'Class 2': [
+        { id: 'c2_q1', title: 'Basic Subtraction', section: 'Mathematics', question: 'What is 15 - 7?', options: ['7', '8', '9', '6'], correctAnswerIndex: 1, explanation: '15 minus 7 equals 8.' },
+        { id: 'c2_q2', title: 'Plant Wonders', section: 'Science', question: 'Which part of a plant grows under the ground?', options: ['Leaves', 'Flowers', 'Roots', 'Stem'], correctAnswerIndex: 2, explanation: 'Roots grow underground and absorb water.' },
+        { id: 'c2_q3', title: 'Number Patterns', section: 'Logical Reasoning', question: 'What comes next in the pattern: 2, 4, 6, 8, __?', options: ['9', '10', '11', '12'], correctAnswerIndex: 1, explanation: 'Adding 2 each step: 8 + 2 = 10.' }
+      ],
+      'Class 3': [
+        { id: 'c3_q1', title: 'Multiplication Sprint', section: 'Mathematics', question: 'What is the product of 12 and 8?', options: ['84', '96', '108', '92'], correctAnswerIndex: 1, explanation: '12 x 8 = 96.' },
+        { id: 'c3_q2', title: 'Plant Anatomy', section: 'Science', question: 'Which part of the plant absorbs water and minerals from the soil?', options: ['Leaves', 'Flowers', 'Roots', 'Stem'], correctAnswerIndex: 2, explanation: 'Roots anchor the plant and absorb nutrients from the soil.' },
+        { id: 'c3_q3', title: 'National Heritage', section: 'EVS', question: 'What is the national bird of India?', options: ['Parrot', 'Peacock', 'Eagle', 'Sparrow'], correctAnswerIndex: 1, explanation: 'The Indian Peacock is the national bird of India.' }
+      ],
+      'Class 4': [
+        { id: 'c4_q1', title: 'Fractions Discovery', section: 'Mathematics', question: 'Which fraction is equivalent to 1/2?', options: ['2/4', '3/5', '1/3', '4/6'], correctAnswerIndex: 0, explanation: '2/4 reduces directly to 1/2.' },
+        { id: 'c4_q2', title: 'States of Matter', section: 'Science', question: 'What state of matter has a fixed volume but takes the shape of its container?', options: ['Solid', 'Liquid', 'Gas', 'Plasma'], correctAnswerIndex: 1, explanation: 'Liquids flow and adapt to container shapes while maintaining fixed volume.' },
+        { id: 'c4_q3', title: 'Speed & Distance', section: 'Mathematics', question: 'A train travels 60 km in 1 hour. How far does it travel in 3 hours at constant speed?', options: ['120 km', '150 km', '180 km', '200 km'], correctAnswerIndex: 2, explanation: 'Distance = Speed x Time = 60 x 3 = 180 km.' }
+      ],
+      'Class 5': [
+        { id: 'c5_q1', title: 'Boiling Points', section: 'Science', question: 'At what temperature Celsius does pure water boil at sea level?', options: ['50°C', '90°C', '100°C', '120°C'], correctAnswerIndex: 2, explanation: 'Water boils at 100°C under 1 atmosphere of pressure.' },
+        { id: 'c5_q2', title: 'Perimeter & Area', section: 'Mathematics', question: 'What is the perimeter of a rectangle with length 10 cm and breadth 6 cm?', options: ['16 cm', '32 cm', '60 cm', '28 cm'], correctAnswerIndex: 1, explanation: 'Perimeter = 2 x (10 + 6) = 32 cm.' },
+        { id: 'c5_q3', title: 'Human Nutrition', section: 'Science', question: 'Which nutrient is primarily responsible for muscle building and body growth?', options: ['Carbohydrates', 'Fats', 'Proteins', 'Vitamins'], correctAnswerIndex: 2, explanation: 'Proteins are body-building nutrients vital for muscle repair and development.' }
+      ],
+      'Class 6': [
+        { id: 'c6_q1', title: 'Integers & Arithmetic', section: 'Mathematics', question: 'What is (-7) + (-8)?', options: ['-1', '1', '-15', '15'], correctAnswerIndex: 2, explanation: 'Adding two negative integers gives: -7 + (-8) = -15.' },
+        { id: 'c6_q2', title: 'Components of Food', section: 'Science', question: 'Which nutrient adds bulk to food and prevents constipation?', options: ['Dietary fibre (Roughage)', 'Carbohydrates', 'Fats', 'Proteins'], correctAnswerIndex: 0, explanation: 'Dietary fibre or roughage is essential for healthy intestinal digestion.' },
+        { id: 'c6_q3', title: 'Energy Resources', section: 'Science', question: 'Which of the following is an exhaustible, non-renewable energy source?', options: ['Solar energy', 'Coal', 'Wind energy', 'Hydroelectric energy'], correctAnswerIndex: 1, explanation: 'Coal is a fossil fuel that takes millions of years to replenish.' }
+      ],
+      'Class 7': [
+        { id: 'c7_q1', title: 'Acids, Bases & Salts', section: 'Science', question: 'What color does blue litmus paper turn when dipped in an acid?', options: ['Blue', 'Red', 'Green', 'Yellow'], correctAnswerIndex: 1, explanation: 'Acids turn blue litmus red. Bases turn red litmus blue.' },
+        { id: 'c7_q2', title: 'Linear Equations', section: 'Mathematics', question: 'If 2x + 7 = 19, what is the value of x?', options: ['5', '6', '7', '8'], correctAnswerIndex: 1, explanation: '2x = 19 - 7 = 12, so x = 6.' },
+        { id: 'c7_q3', title: 'Circulation in Animals', section: 'Science', question: 'Which blood component contains haemoglobin that binds and transports oxygen?', options: ['White Blood Cells', 'Red Blood Cells', 'Platelets', 'Blood Plasma'], correctAnswerIndex: 1, explanation: 'Red Blood Cells (Erythrocytes) contain haemoglobin to carry oxygen.' }
+      ],
+      'Class 8': [
+        { id: 'c8_q1', title: 'Linear Equations in 1 Variable', section: 'Mathematics', question: 'If 3x + 5 = 20, what is the value of x?', options: ['3', '5', '7', '15'], correctAnswerIndex: 1, explanation: '3x = 20 - 5 = 15, so x = 5.' },
+        { id: 'c8_q2', title: 'Materials: Metals & Non-Metals', section: 'Science', question: 'Which highly reactive metal is stored in kerosene to prevent it from catching fire in air?', options: ['Iron', 'Sodium', 'Copper', 'Aluminium'], correctAnswerIndex: 1, explanation: 'Sodium reacts violently with air and water, so it is kept in kerosene.' },
+        { id: 'c8_q3', title: 'Squares and Square Roots', section: 'Mathematics', question: 'What is the square root of 625?', options: ['15', '25', '35', '45'], correctAnswerIndex: 1, explanation: '25 x 25 = 625.' }
+      ],
+      'Class 9': [
+        { id: 'c9_q1', title: 'Laws of Motion', section: 'Science', question: 'Which law states that for every action, there is an equal and opposite reaction?', options: ['First Law', 'Second Law', 'Third Law', 'Law of Gravitation'], correctAnswerIndex: 2, explanation: "Newton's Third Law states every action has an equal and opposite reaction." },
+        { id: 'c9_q2', title: 'Polynomials', section: 'Mathematics', question: 'What are the roots/zeros of the polynomial p(x) = x² - 9?', options: ['3 and -3', '9 and -9', '0 and 9', '1 and -9'], correctAnswerIndex: 0, explanation: 'x² - 9 = 0 => (x-3)(x+3) = 0 => x = 3, -3.' },
+        { id: 'c9_q3', title: 'Fundamental Unit of Life', section: 'Science', question: 'Which organelle is known as the powerhouse of the cell?', options: ['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi apparatus'], correctAnswerIndex: 1, explanation: 'Mitochondria generate ATP, the energy currency of the cell.' }
+      ],
+      'Class 10': [
+        { id: 'c10_q1', title: 'Introduction to Trigonometry', section: 'Mathematics', question: 'What is the standard value of sin 30°?', options: ['1/2', '√3/2', '1', '0'], correctAnswerIndex: 0, explanation: 'sin 30° = 1/2.' },
+        { id: 'c10_q2', title: 'Chemical Reactions & Equations', section: 'Science', question: 'Which gas is evolved when zinc granules react with dilute sulphuric acid?', options: ['Oxygen', 'Hydrogen', 'Carbon Dioxide', 'Sulphur Dioxide'], correctAnswerIndex: 1, explanation: 'Zn + H₂SO₄ -> ZnSO₄ + H₂ (Hydrogen gas).' },
+        { id: 'c10_q3', title: 'Quadratic Equations', section: 'Mathematics', question: 'What is the discriminant of the quadratic equation 2x² - 4x + 3 = 0?', options: ['-8', '8', '-4', '16'], correctAnswerIndex: 0, explanation: 'D = b² - 4ac = (-4)² - 4(2)(3) = 16 - 24 = -8.' }
+      ]
+    };
+
+    function getExamQuestionsForGrade(grade) {
+      const g = grade || getActiveStudentGrade();
+      return (DEFAULT_EXAM_QUESTIONS_BY_GRADE[g] || DEFAULT_EXAM_QUESTIONS_BY_GRADE['Class 3']).map((q, idx) => ({
+        id: q.id || ('quiz_' + g.toLowerCase().replace(/\s+/g, '_') + '_' + (idx + 1)),
+        title: q.title || ('Exam ' + (idx + 1)),
+        subject: q.section || 'General Curriculum',
+        question: q.question,
+        questionText: q.question,
+        options: q.options,
+        correctAnswerIndex: q.correctAnswerIndex,
+        correctOptionIndex: q.correctAnswerIndex,
+        explanation: q.explanation,
+        gradeClass: g,
+        questions: [q]
+      }));
+    }
+
     var currentCurriculumQuizzes = [];
     var currentSelectedExamKey = 'HINDUSTAN';
     var currentDailyPracticeIdx = 0;
@@ -9196,6 +9266,12 @@ const ZoptroApiClient = {
       const benchLabel = document.getElementById('pyqpGradeBenchmark');
       if (benchLabel) benchLabel.innerText = studentGrade + ' Benchmark';
 
+      // 1. Immediately paint instant default Olympiad questions in 0ms!
+      currentCurriculumQuizzes = getExamQuestionsForGrade(studentGrade);
+      renderExamSelectorPills();
+      selectCompetitiveExam(currentCurriculumQuizzes[0] ? currentCurriculumQuizzes[0].id : 'HINDUSTAN');
+
+      // 2. Background sync with backend
       if (typeof ZoptroApiClient !== 'undefined') {
         ZoptroApiClient.getContentByGrade({
           studentId: studentId,
@@ -9204,20 +9280,11 @@ const ZoptroApiClient = {
         }).then(function(res) {
           if (res && res.success && Array.isArray(res.items) && res.items.length > 0) {
             currentCurriculumQuizzes = res.items;
-          } else {
-            if (typeof BrowserMockBackend !== 'undefined' && BrowserMockBackend.KEYS) {
-              const all = BrowserMockBackend._getTable(BrowserMockBackend.KEYS.CURRICULUM_QUIZZES);
-              currentCurriculumQuizzes = all.filter(q => {
-                const g = BrowserMockBackend._normalizeGrade ? BrowserMockBackend._normalizeGrade(q.grade || q.gradeClass) : (q.grade || q.gradeClass);
-                const isActive = String(q.isActive).toUpperCase() === 'TRUE' || q.isActive === true;
-                return g === studentGrade && isActive;
-              }).map(q => (BrowserMockBackend._formatContentItem ? BrowserMockBackend._formatContentItem(q, 'CurriculumQuizzes') : q));
-            } else {
-              currentCurriculumQuizzes = [];
-            }
+            renderExamSelectorPills();
+            selectCompetitiveExam(currentCurriculumQuizzes[0].id);
           }
-          renderExamSelectorPills();
-          selectCompetitiveExam(currentCurriculumQuizzes[0] ? currentCurriculumQuizzes[0].id : 'HINDUSTAN');
+        }).catch(function(err) {
+          console.warn('Exam content background sync:', err);
         });
       }
     }
@@ -9315,21 +9382,31 @@ const ZoptroApiClient = {
     }
 
     function renderDailyPracticeQuestion() {
+      const studentGrade = getActiveStudentGrade();
       const activeQuiz = currentCurriculumQuizzes.find(q => q.id === currentSelectedExamKey) || currentCurriculumQuizzes[0];
-      if (!activeQuiz) return;
-      const list = Array.isArray(activeQuiz.questions) ? activeQuiz.questions : [];
-      if (list.length === 0) return;
+      
+      let list = [];
+      if (activeQuiz && Array.isArray(activeQuiz.questions) && activeQuiz.questions.length > 0) {
+        list = activeQuiz.questions;
+      } else if (currentCurriculumQuizzes && currentCurriculumQuizzes.length > 0) {
+        list = currentCurriculumQuizzes.filter(q => q && (q.question || q.questionText || q.q));
+      }
+
+      if (!list || list.length === 0) {
+        list = getExamQuestionsForGrade(studentGrade);
+      }
+      if (!list || list.length === 0) return;
       if (currentDailyPracticeIdx >= list.length) currentDailyPracticeIdx = 0;
 
       const item = list[currentDailyPracticeIdx];
       const titleEl = document.getElementById('dailyPracticePaperTitle');
-      if (titleEl) titleEl.innerText = (activeQuiz.title || 'OLYMPIAD').toUpperCase() + ' PRACTICE';
+      if (titleEl) titleEl.innerText = ((activeQuiz && activeQuiz.title) || (studentGrade + ' OLYMPIAD')).toUpperCase() + ' PRACTICE';
       const counterEl = document.getElementById('dailyPracticeQuestionCounter');
       if (counterEl) counterEl.innerText = 'Question ' + (currentDailyPracticeIdx + 1) + ' of ' + list.length;
       const secTag = document.getElementById('dailyPracticeSectionTag');
-      if (secTag) secTag.innerText = item.section || item.sec || activeQuiz.subject || 'Practice Section';
+      if (secTag) secTag.innerText = item.section || item.sec || (activeQuiz && activeQuiz.subject) || 'Practice Section';
       const qText = document.getElementById('dailyPracticeQuestionText');
-      if (qText) qText.innerText = item.question || item.q || '';
+      if (qText) qText.innerText = item.question || item.questionText || item.q || 'Select the correct answer:';
 
       const container = document.getElementById('dailyPracticeOptionsContainer');
       if (!container) return;
@@ -9337,9 +9414,9 @@ const ZoptroApiClient = {
       const feedback = document.getElementById('dailyPracticeFeedbackBox');
       if (feedback) feedback.classList.add('hidden');
 
-      const options = Array.isArray(item.options) ? item.options : (item.opts || []);
-      const correct = item.correctAnswerIndex !== undefined ? item.correctAnswerIndex : (item.correct || 0);
-      const fact = item.explanation || item.fact || 'Verified curriculum concept!';
+      const options = Array.isArray(item.options) ? item.options : (item.opts || (item.optionsJson ? (function() { try { return JSON.parse(item.optionsJson); } catch (e) { return ['Option A', 'Option B', 'Option C', 'Option D']; } })() : ['Option A', 'Option B', 'Option C', 'Option D']));
+      const correct = item.correctAnswerIndex !== undefined ? Number(item.correctAnswerIndex) : (item.correctOptionIndex !== undefined ? Number(item.correctOptionIndex) : 0);
+      const fact = item.explanation || item.hint || item.fact || 'Verified curriculum concept!';
 
       options.forEach((opt, idx) => {
         const btn = document.createElement('button');
