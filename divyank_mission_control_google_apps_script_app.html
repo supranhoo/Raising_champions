@@ -1273,6 +1273,54 @@
               <!-- Rendered via JS -->
             </div>
           </div>
+
+          <!-- Question Paper Questions Viewer (Full In-Place Render) -->
+          <div id="pyqpPaperViewerSection" class="pt-5 border-t border-[#DED9D3] space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#09293D] text-white p-4 rounded-none">
+              <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs bg-[#F65800] text-white font-bold px-2 py-0.5 rounded-none" id="pyqpViewerYearBadge">2024</span>
+                  <h4 class="font-display font-bold text-sm text-white" id="pyqpViewerTitle">2024 Authentic Question Paper • 35 Questions</h4>
+                </div>
+                <p class="text-xs text-[#D9E6EB]" id="pyqpViewerSub">Class 8 • Full Official Exam Paper with Step-by-Step Solution Keys</p>
+              </div>
+
+              <div class="flex items-center space-x-2 flex-wrap gap-2 w-full sm:w-auto">
+                <button onclick="toggleAllPyqpSolutions()" id="pyqpToggleSolutionsBtn" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-none border border-white/20 transition flex-1 sm:flex-initial">
+                  👁️ Reveal All Solutions
+                </button>
+                <button onclick="startSelectedPyqpExam()" class="px-3.5 py-1.5 bg-[#F65800] hover:bg-[#F9A66E] text-white text-xs font-bold rounded-none transition flex items-center justify-center gap-1.5 flex-1 sm:flex-initial">
+                  <span>⏱️</span>
+                  <span>Take as Timed Test</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Section Filter Pills -->
+            <div class="flex flex-wrap gap-1.5 font-sans text-xs" id="pyqpSectionFilters">
+              <button onclick="filterPyqpSection('all')" id="pyqpSecFilter-all" class="pyqp-sec-filter-btn px-3 py-1.5 font-bold rounded-none bg-[#09293D] text-white">All Questions (<span id="pyqpCountAll">35</span>)</button>
+              <button onclick="filterPyqpSection('Logical Reasoning')" id="pyqpSecFilter-LogicalReasoning" class="pyqp-sec-filter-btn px-3 py-1.5 font-bold rounded-none bg-[#F4F2EA] text-[#09293D] hover:bg-[#DED9D3]">Logical Reasoning (Q1–Q10)</button>
+              <button onclick="filterPyqpSection('Mathematical Concepts')" id="pyqpSecFilter-MathematicalConcepts" class="pyqp-sec-filter-btn px-3 py-1.5 font-bold rounded-none bg-[#F4F2EA] text-[#09293D] hover:bg-[#DED9D3]">Math Concepts (Q11–Q20)</button>
+              <button onclick="filterPyqpSection('Everyday Discovery')" id="pyqpSecFilter-EverydayDiscovery" class="pyqp-sec-filter-btn px-3 py-1.5 font-bold rounded-none bg-[#F4F2EA] text-[#09293D] hover:bg-[#DED9D3]">Everyday Math & Discovery (Q21–Q30)</button>
+              <button onclick="filterPyqpSection('Achievers Section')" id="pyqpSecFilter-AchieversSection" class="pyqp-sec-filter-btn px-3 py-1.5 font-bold rounded-none bg-[#F4F2EA] text-[#09293D] hover:bg-[#DED9D3]">Achievers Section (Q31–Q35)</button>
+            </div>
+
+            <!-- Numbered Question Jump Bar -->
+            <div class="p-3 bg-[#F9F8F3] border border-[#DED9D3] rounded-none space-y-2">
+              <div class="flex items-center justify-between text-xs font-sans">
+                <span class="font-bold text-[#09293D]">Quick Question Navigator:</span>
+                <span class="text-xs text-[#666D57]" id="pyqpAttemptSummary">0 of 35 Answered • Click question number to jump</span>
+              </div>
+              <div class="flex flex-wrap gap-1" id="pyqpQuestionJumpGrid">
+                <!-- 1 to 35 numbered buttons -->
+              </div>
+            </div>
+
+            <!-- Container for All Rendered Questions -->
+            <div class="space-y-4 font-sans" id="pyqpQuestionsListContainer">
+              <!-- Rendered via renderPyqpPaperQuestions() -->
+            </div>
+          </div>
         </div>
       </div>
 
@@ -9965,7 +10013,7 @@ const ZoptroApiClient = {
       }
 
       renderDailyPracticeQuestion();
-      renderTenPyqpCards(examKey);
+      renderTenPyqpCards(currentPyqpYear || '2024');
     }
 
     function switchExamSubTab(tabName) {
@@ -9984,6 +10032,12 @@ const ZoptroApiClient = {
       if (paneSyllabus) paneSyllabus.classList.toggle('hidden', tabName !== 'syllabus');
       if (paneDaily) paneDaily.classList.toggle('hidden', tabName !== 'dailyPractice');
       if (panePyqp) panePyqp.classList.toggle('hidden', tabName !== 'pyqpList');
+
+      if (tabName === 'pyqpList') {
+        const yrSelect = document.getElementById('pyqpYearSelect');
+        const yr = yrSelect ? yrSelect.value : (currentPyqpYear || '2024');
+        loadPyqpByYear(yr);
+      }
     }
 
     function renderDailyPracticeQuestion() {
@@ -10116,26 +10170,300 @@ const ZoptroApiClient = {
       }
     }
 
+    let pyqpQuestionStatus = {};
+    let pyqpAllSolutionsRevealed = false;
+    let currentPyqpActiveFilter = 'all';
+
     function loadPyqpByYear(year) {
       playSound('coin');
+      const yr = String(year || currentPyqpYear || '2024');
       const studentGrade = getActiveStudentGrade();
       const modeSelect = document.getElementById('pyqpModeSelect');
       const targetCount = modeSelect ? Number(modeSelect.value) : 35;
       const heading = document.getElementById('pyqpPaperHeading');
       const desc = document.getElementById('pyqpPaperDesc');
-      const paper = getPyqpPaperForYearAndGrade(year, studentGrade, targetCount);
-      currentPyqpYear = year;
+      const paper = getPyqpPaperForYearAndGrade(yr, studentGrade, targetCount);
+      currentPyqpYear = yr;
       currentPyqpPaper = paper;
 
+      // Update dropdown selection if different
+      const yearSelect = document.getElementById('pyqpYearSelect');
+      if (yearSelect && yearSelect.value !== yr) {
+        yearSelect.value = yr;
+      }
+
       const modeLabel = targetCount === 35 ? 'Full Official Exam (35 Qs • 60 Mins)' : (targetCount === 15 ? 'Standard Mock Test (15 Qs • 20 Mins)' : 'Quick Sprint Drill (5 Qs • 5 Mins)');
-      if (heading) heading.innerText = year + ' Official Question Paper (' + (targetCount === 35 ? '35 Questions' : (targetCount === 15 ? '15 Questions' : '5 Questions')) + ') • ' + studentGrade;
-      if (desc) desc.innerText = 'Loaded authentic ' + year + ' ' + modeLabel + ' for ' + studentGrade + ' with full step-by-step solution keys. Covers Logical Reasoning, Mathematical Concepts, Everyday Discovery & Achievers Section.';
+      if (heading) heading.innerText = yr + ' Official Question Paper (' + (targetCount === 35 ? '35 Questions' : (targetCount === 15 ? '15 Questions' : '5 Questions')) + ') • ' + studentGrade;
+      if (desc) desc.innerText = 'Loaded authentic ' + yr + ' ' + modeLabel + ' for ' + studentGrade + ' with full step-by-step solution keys. Covers Logical Reasoning, Mathematical Concepts, Everyday Discovery & Achievers Section.';
+
+      // Update viewer header
+      const badge = document.getElementById('pyqpViewerYearBadge');
+      if (badge) badge.innerText = yr;
+      const viewerTitle = document.getElementById('pyqpViewerTitle');
+      if (viewerTitle) viewerTitle.innerText = yr + ' Authentic Question Paper • ' + paper.questions.length + ' Questions';
+      const viewerSub = document.getElementById('pyqpViewerSub');
+      if (viewerSub) viewerSub.innerText = studentGrade + ' • ' + modeLabel + ' with Step-by-Step Solutions';
+
+      // Reset question status for new paper load
+      pyqpQuestionStatus = {};
+      pyqpAllSolutionsRevealed = false;
+      const solBtn = document.getElementById('pyqpToggleSolutionsBtn');
+      if (solBtn) solBtn.innerText = '👁️ Reveal All Solutions';
+
+      // Render the actual 35 questions directly into the DOM
+      renderPyqpPaperQuestions(paper);
+
+      // Re-render Quick Jump cards so active year is clearly highlighted
+      renderTenPyqpCards(yr);
+    }
+
+    function renderPyqpPaperQuestions(paper) {
+      const container = document.getElementById('pyqpQuestionsListContainer');
+      if (!container || !paper || !Array.isArray(paper.questions)) return;
+
+      container.innerHTML = '';
+      const questions = paper.questions;
+
+      // Update count indicators
+      const countAll = document.getElementById('pyqpCountAll');
+      if (countAll) countAll.innerText = questions.length;
+
+      questions.forEach((item, idx) => {
+        const qNum = idx + 1;
+        let secName = item.section || 'General Practice';
+        if (!item.section) {
+          if (qNum <= 10) secName = 'Logical Reasoning';
+          else if (qNum <= 20) secName = 'Mathematical Concepts';
+          else if (qNum <= 30) secName = 'Everyday Discovery';
+          else secName = 'Achievers Section';
+        }
+
+        const isAchiever = secName.includes('Achievers');
+        const marksText = isAchiever ? '3 Marks (HOTS)' : '1 Mark';
+
+        const card = document.createElement('div');
+        card.id = 'pyqp-card-' + idx;
+        card.setAttribute('data-section', secName);
+        card.className = "pyqp-question-item bg-white border border-[#DED9D3] rounded-none p-5 space-y-3 transition";
+
+        // Question header
+        let optionsHtml = '';
+        const opts = item.options || item.opts || [];
+        opts.forEach((optText, optIdx) => {
+          const letter = String.fromCharCode(65 + optIdx);
+          optionsHtml += `
+            <button onclick="handlePyqpInPlaceAnswer(${idx}, ${optIdx}, ${item.c})" id="pyqp-opt-${idx}-${optIdx}" class="pyqp-opt-btn flex items-center space-x-2.5 p-3 rounded-none border border-[#DED9D3] bg-[#F9F8F3] hover:bg-[#F4F2EA] text-left text-xs font-sans text-[#09293D] transition">
+              <span class="w-6 h-6 flex-shrink-0 flex items-center justify-center font-bold bg-[#09293D] text-white text-xs">${letter}</span>
+              <span class="leading-relaxed flex-1">${optText}</span>
+              <span id="pyqp-opt-icon-${idx}-${optIdx}" class="text-xs"></span>
+            </button>
+          `;
+        });
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between border-b border-[#DED9D3] pb-2.5 flex-wrap gap-2">
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 font-bold text-xs bg-[#09293D] text-white rounded-none">Q${qNum}</span>
+              <span class="px-2 py-0.5 text-xs font-bold ${isAchiever ? 'bg-[#FFF0ED] text-[#F65800] border border-[#F65800]' : 'bg-[#F4F2EA] text-[#666D57] border border-[#DED9D3]'} rounded-none">${secName}</span>
+            </div>
+            <span class="text-xs font-bold text-[#666D57] bg-[#F9F8F3] px-2 py-0.5 border border-[#DED9D3]">${marksText}</span>
+          </div>
+
+          <p class="font-display font-semibold text-sm text-[#09293D] leading-relaxed">${item.q || item.question || ''}</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            ${optionsHtml}
+          </div>
+
+          <div id="pyqp-feedback-${idx}" class="hidden p-3 rounded-none text-xs font-sans"></div>
+
+          <div class="pt-2 flex items-center justify-between border-t border-[#DED9D3] text-xs">
+            <button onclick="togglePyqpSingleSolution(${idx})" class="text-[#09293D] hover:text-[#F65800] font-bold flex items-center space-x-1 transition">
+              <span>💡</span>
+              <span id="pyqp-exp-btn-text-${idx}">Show Solution & Reasoning</span>
+            </button>
+            <span class="text-xs text-[#666D57]">SOF Authentic Benchmark</span>
+          </div>
+
+          <div id="pyqp-exp-${idx}" class="hidden p-3 bg-[#F8FFE1] border border-[#7FBF19] text-xs text-[#09293D] space-y-1.5 font-sans leading-relaxed">
+            <div class="font-bold text-[#28540A] flex items-center gap-1.5">
+              <span>✓ Correct Answer:</span>
+              <span>Option ${String.fromCharCode(65 + (item.c || 0))} (${opts[item.c || 0] || ''})</span>
+            </div>
+            <div class="text-[#09293D]"><strong>Detailed Explanation:</strong> ${item.exp || 'Standard mathematical reasoning applies.'}</div>
+            ${item.hint ? '<div class="text-[#666D57]"><strong>Key Concept / Hint:</strong> ' + item.hint + '</div>' : ''}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      renderPyqpJumpGrid(questions.length);
+      filterPyqpSection(currentPyqpActiveFilter);
+    }
+
+    function renderPyqpJumpGrid(total) {
+      const grid = document.getElementById('pyqpQuestionJumpGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      for (let i = 0; i < total; i++) {
+        const qNum = i + 1;
+        const btn = document.createElement('button');
+        btn.id = 'pyqp-jump-btn-' + i;
+        btn.onclick = () => scrollToPyqpQuestion(i);
+        btn.className = "w-7 h-7 flex items-center justify-center text-xs font-bold rounded-none border border-[#DED9D3] bg-white text-[#09293D] hover:border-[#09293D] transition";
+        btn.innerText = qNum;
+        grid.appendChild(btn);
+      }
+
+      updatePyqpAttemptSummary();
+    }
+
+    function scrollToPyqpQuestion(idx) {
+      const card = document.getElementById('pyqp-card-' + idx);
+      if (!card) return;
+      // Make sure the question is visible if filter was applied
+      card.classList.remove('hidden');
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('ring-2', 'ring-[#F65800]');
+      setTimeout(() => card.classList.remove('ring-2', 'ring-[#F65800]'), 1500);
+    }
+
+    function handlePyqpInPlaceAnswer(qIdx, selectedIdx, correctIdx) {
+      const isCorrect = (selectedIdx === correctIdx);
+      const isFirstAttempt = !pyqpQuestionStatus[qIdx];
+      pyqpQuestionStatus[qIdx] = { answered: true, selected: selectedIdx, correct: isCorrect };
+
+      // Audio feedback
+      if (isCorrect) playSound('correct');
+      else playSound('wrong');
+
+      // Update option button styles
+      for (let i = 0; i < 4; i++) {
+        const btn = document.getElementById('pyqp-opt-' + qIdx + '-' + i);
+        const icon = document.getElementById('pyqp-opt-icon-' + qIdx + '-' + i);
+        if (!btn) continue;
+
+        if (i === selectedIdx) {
+          if (isCorrect) {
+            btn.className = "pyqp-opt-btn flex items-center space-x-2.5 p-3 rounded-none border-2 border-[#7FBF19] bg-[#F8FFE1] text-left text-xs font-sans text-[#28540A] font-bold";
+            if (icon) icon.innerHTML = '✅ Correct!';
+          } else {
+            btn.className = "pyqp-opt-btn flex items-center space-x-2.5 p-3 rounded-none border-2 border-[#F65800] bg-[#FFF0ED] text-left text-xs font-sans text-[#932300]";
+            if (icon) icon.innerHTML = '❌ Incorrect';
+          }
+        } else if (i === correctIdx && !isCorrect) {
+          // Highlight the right answer
+          btn.className = "pyqp-opt-btn flex items-center space-x-2.5 p-3 rounded-none border border-[#7FBF19] bg-[#F8FFE1]/60 text-left text-xs font-sans text-[#28540A]";
+          if (icon) icon.innerHTML = '✓ Correct Answer';
+        } else {
+          btn.className = "pyqp-opt-btn flex items-center space-x-2.5 p-3 rounded-none border border-[#DED9D3] bg-[#F9F8F3] opacity-60 text-left text-xs font-sans text-[#09293D]";
+          if (icon) icon.innerHTML = '';
+        }
+      }
+
+      // Automatically reveal explanation
+      const expEl = document.getElementById('pyqp-exp-' + qIdx);
+      if (expEl) expEl.classList.remove('hidden');
+      const expText = document.getElementById('pyqp-exp-btn-text-' + qIdx);
+      if (expText) expText.innerText = 'Hide Solution & Reasoning';
+
+      // Update navigator jump button
+      const jumpBtn = document.getElementById('pyqp-jump-btn-' + qIdx);
+      if (jumpBtn) {
+        if (isCorrect) {
+          jumpBtn.className = "w-7 h-7 flex items-center justify-center text-xs font-bold rounded-none border border-[#7FBF19] bg-[#7FBF19] text-white";
+        } else {
+          jumpBtn.className = "w-7 h-7 flex items-center justify-center text-xs font-bold rounded-none border border-[#F65800] bg-[#F65800] text-white";
+        }
+      }
+
+      // Award rewards if first attempt and correct
+      if (isFirstAttempt && isCorrect) {
+        const studentId = getActiveStudentId();
+        const user = getActiveUser();
+        if (user) {
+          user.coins = (user.coins || 0) + 2;
+          user.xp = (user.xp || 0) + 5;
+          saveUserState();
+          updateWalletDisplay();
+          showDailyPracticeFeedback(true, '+2 Coins & +5 XP Awarded! 🎉');
+        }
+      }
+
+      updatePyqpAttemptSummary();
+    }
+
+    function togglePyqpSingleSolution(qIdx) {
+      const expEl = document.getElementById('pyqp-exp-' + qIdx);
+      const expText = document.getElementById('pyqp-exp-btn-text-' + qIdx);
+      if (!expEl) return;
+      const isHidden = expEl.classList.contains('hidden');
+      if (isHidden) {
+        expEl.classList.remove('hidden');
+        if (expText) expText.innerText = 'Hide Solution & Reasoning';
+      } else {
+        expEl.classList.add('hidden');
+        if (expText) expText.innerText = 'Show Solution & Reasoning';
+      }
+    }
+
+    function toggleAllPyqpSolutions() {
+      pyqpAllSolutionsRevealed = !pyqpAllSolutionsRevealed;
+      const btn = document.getElementById('pyqpToggleSolutionsBtn');
+      if (btn) btn.innerText = pyqpAllSolutionsRevealed ? '🔒 Hide All Solutions' : '👁️ Reveal All Solutions';
+
+      const items = document.querySelectorAll('[id^="pyqp-exp-"]');
+      items.forEach(el => {
+        if (pyqpAllSolutionsRevealed) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+      });
+
+      const btnTexts = document.querySelectorAll('[id^="pyqp-exp-btn-text-"]');
+      btnTexts.forEach(t => {
+        t.innerText = pyqpAllSolutionsRevealed ? 'Hide Solution & Reasoning' : 'Show Solution & Reasoning';
+      });
+    }
+
+    function filterPyqpSection(secName) {
+      currentPyqpActiveFilter = secName;
+      const buttons = document.querySelectorAll('.pyqp-sec-filter-btn');
+      buttons.forEach(btn => {
+        const isMatch = btn.id === ('pyqpSecFilter-' + secName.replace(/\s+/g, ''));
+        if (isMatch) {
+          btn.className = "pyqp-sec-filter-btn px-3 py-1.5 font-bold rounded-none bg-[#09293D] text-white";
+        } else {
+          btn.className = "pyqp-sec-filter-btn px-3 py-1.5 font-bold rounded-none bg-[#F4F2EA] text-[#09293D] hover:bg-[#DED9D3]";
+        }
+      });
+
+      const items = document.querySelectorAll('.pyqp-question-item');
+      items.forEach(item => {
+        const itemSec = item.getAttribute('data-section');
+        if (secName === 'all' || itemSec === secName) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    }
+
+    function updatePyqpAttemptSummary() {
+      const summary = document.getElementById('pyqpAttemptSummary');
+      if (!summary) return;
+      const total = currentPyqpPaper && currentPyqpPaper.questions ? currentPyqpPaper.questions.length : 35;
+      const answeredKeys = Object.keys(pyqpQuestionStatus);
+      const answeredCount = answeredKeys.length;
+      const correctCount = answeredKeys.filter(k => pyqpQuestionStatus[k].correct).length;
+
+      summary.innerText = answeredCount + ' of ' + total + ' Answered (' + correctCount + ' Correct) • Click question number to jump';
     }
 
     function startSelectedPyqpExam() {
       const select = document.getElementById('pyqpYearSelect');
       const modeSelect = document.getElementById('pyqpModeSelect');
-      const yr = select ? select.value : (currentPyqpYear || '2025');
+      const yr = select ? select.value : (currentPyqpYear || '2024');
       const targetCount = modeSelect ? Number(modeSelect.value) : 35;
       const studentGrade = getActiveStudentGrade();
       const paper = getPyqpPaperForYearAndGrade(yr, studentGrade, targetCount);
@@ -10155,46 +10483,37 @@ const ZoptroApiClient = {
     }
 
     function previewPyqpQuestions() {
-      const select = document.getElementById('pyqpYearSelect');
-      const modeSelect = document.getElementById('pyqpModeSelect');
-      const yr = select ? select.value : (currentPyqpYear || '2025');
-      const targetCount = modeSelect ? Number(modeSelect.value) : 35;
-      const studentGrade = getActiveStudentGrade();
-      const paper = getPyqpPaperForYearAndGrade(yr, studentGrade, targetCount);
       playSound('coin');
-
-      activeExamQuizSession = {
-        id: 'pyqp_' + yr + '_' + targetCount,
-        title: yr + ' OFFICIAL PAPER [PREVIEW • ' + paper.questions.length + ' QS] • ' + studentGrade.toUpperCase(),
-        gradeClass: studentGrade,
-        questions: paper.questions
-      };
-      currentDailyPracticeIdx = 0;
-
-      switchExamSubTab('dailyPractice');
-      renderDailyPracticeQuestion();
+      const viewer = document.getElementById('pyqpPaperViewerSection');
+      if (viewer) {
+        viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
-    function renderTenPyqpCards(examKey) {
+    function renderTenPyqpCards(activeYear) {
       const container = document.getElementById('pyqpTenCardsGrid');
       if (!container) return;
       container.innerHTML = '';
       const years = [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
+      const selectedYr = String(activeYear || currentPyqpYear || '2024');
 
       years.forEach(yr => {
+        const isSelected = String(yr) === selectedYr;
         const card = document.createElement('div');
-        card.className = "bg-white border border-[#DED9D3] hover:border-[#09293D] p-2.5 rounded-none flex items-center justify-between cursor-pointer transition text-xs font-sans";
+        card.className = isSelected
+          ? "bg-[#09293D] text-white border-2 border-[#09293D] p-2.5 rounded-none flex items-center justify-between cursor-pointer transition text-xs font-sans"
+          : "bg-white border border-[#DED9D3] hover:border-[#09293D] p-2.5 rounded-none flex items-center justify-between cursor-pointer transition text-xs font-sans";
         card.innerHTML = `
           <div>
-            <div class="font-bold text-[#09293D]">${yr}</div>
-            <div class="text-xs text-[#666D57]">Set A</div>
+            <div class="font-bold ${isSelected ? 'text-white' : 'text-[#09293D]'}">${yr}</div>
+            <div class="text-xs ${isSelected ? 'text-[#D9E6EB]' : 'text-[#666D57]'}">Set A</div>
           </div>
-          <button class="px-2 py-1 bg-[#F4F2EA] text-[#09293D] rounded-none text-xs font-bold border border-[#DED9D3]">Load</button>
+          <button class="px-2 py-1 ${isSelected ? 'bg-[#F65800] text-white' : 'bg-[#F4F2EA] text-[#09293D]'} rounded-none text-xs font-bold border ${isSelected ? 'border-[#F65800]' : 'border-[#DED9D3]'}">${isSelected ? '✓ Loaded' : 'Load'}</button>
         `;
         card.onclick = () => {
-          const dropdown = document.getElementById('pyqpYearSelect');
-          if (dropdown) dropdown.value = yr;
           loadPyqpByYear(yr);
+          const viewer = document.getElementById('pyqpPaperViewerSection');
+          if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
         container.appendChild(card);
       });
