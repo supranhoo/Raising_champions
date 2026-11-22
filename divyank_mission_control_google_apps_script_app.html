@@ -3073,7 +3073,7 @@
       <div class="w-14 h-14 rounded-none bg-[#F4F2EA] border-2 border-[#09293D] text-2xl mx-auto flex items-center justify-center">🛡️</div>
       <div>
         <h3 id="adminPinModalHeading" class="font-display font-bold text-base text-[#09293D] uppercase tracking-wider">Administrator Access Challenge</h3>
-        <p id="adminPinModalSubtext" class="text-xs text-[#666D57] mt-1">Enter your administrator PIN or password to unlock Mission Control CMS.</p>
+        <p id="adminPinModalSubtext" class="text-xs text-[#666D57] mt-1">Enter your administrator PIN or password (default: <strong class="text-[#09293D]">9999</strong>) to unlock Mission Control CMS.</p>
       </div>
       <div>
         <input type="password" id="adminSwitchPin" placeholder="Admin PIN / Password" maxlength="32" class="w-full bg-[#F9F8F3] border-2 border-[#09293D] rounded-none px-3 py-2.5 text-[#09293D] font-mono font-bold text-center text-lg tracking-widest focus:outline-none">
@@ -12104,15 +12104,16 @@ const ZoptroApiClient = {
         return;
       }
 
-      // Fast-path verification for default administrator credentials
+      // Fast-path verification for default administrator credentials (9999) or logged-in parent
       const lowerPin = pin.toLowerCase();
-      if (pin === '9999' || lowerPin === 'adminpass123' || lowerPin === 'admin123') {
+      const isParentMatch = currentUser && (currentUser.pin === pin || (currentUser.role === 'parent' && currentUser.password === pin));
+      if (pin === '9999' || lowerPin === 'adminpass123' || lowerPin === 'admin123' || isParentMatch) {
         closeAdminPinPrompt();
         currentUser = {
           id: 'u_adm_demo',
           role: 'admin',
-          fullName: 'Super Admin',
-          email: 'admin@zoptro.local'
+          fullName: (currentUser && currentUser.fullName) ? (currentUser.fullName + ' (Admin)') : 'Super Admin',
+          email: (currentUser && currentUser.email) || 'admin@zoptro.local'
         };
         saveAuthSession(currentUser, 'tok_admin_' + Date.now());
         updateAuthUI();
@@ -12120,7 +12121,7 @@ const ZoptroApiClient = {
         // Asynchronously notify backend to ensure sheet record exists
         ZoptroApiClient.verifyRolePin({
           userId: 'u_adm_demo',
-          pin: pin,
+          pin: '9999',
           targetRole: 'admin'
         }).catch(function(e) { console.warn('Admin sync notice:', e); });
         return;
@@ -12367,8 +12368,15 @@ const ZoptroApiClient = {
     /**
      * Fetch and refresh live quota status from ZoptroApiClient
      */
+    function getActiveAdminUserId() {
+      if (currentUser && currentUser.role === 'admin' && currentUser.id && currentUser.id !== 'u_par_demo') {
+        return currentUser.id;
+      }
+      return 'u_adm_demo';
+    }
+
     function fetchGeminiQuotaStatus() {
-      const adminId = (currentUser && currentUser.id) ? currentUser.id : 'u_adm_demo';
+      const adminId = getActiveAdminUserId();
       const modelSelect = document.getElementById('aiGenModel');
       const model = modelSelect ? modelSelect.value : 'gemini-1.5-flash';
 
@@ -12924,7 +12932,7 @@ const ZoptroApiClient = {
       if (statusMsg) statusMsg.classList.add('hidden');
       if (countdownBanner) countdownBanner.classList.add('hidden');
 
-      const adminId = (currentUser && currentUser.id) ? currentUser.id : 'u_adm_demo';
+      const adminId = getActiveAdminUserId();
 
       const payload = {
         adminUserId: adminId,
@@ -13788,7 +13796,7 @@ const ZoptroApiClient = {
         return;
       }
 
-      const adminId = (currentUser && currentUser.id) ? currentUser.id : 'u_adm_demo';
+      const adminId = getActiveAdminUserId();
       ZoptroApiClient.getAdminContentList({
         adminUserId: adminId,
         contentType: currentAdminTab,
@@ -13927,7 +13935,7 @@ const ZoptroApiClient = {
       const lockPill = document.getElementById('adminLockStatusPill');
       if (lockPill) lockPill.innerText = "LockService: Mutating status (withScriptLock 10s)...";
 
-      const adminId = (currentUser && currentUser.id) ? currentUser.id : 'u_adm_demo';
+      const adminId = getActiveAdminUserId();
       ZoptroApiClient.toggleContentActiveStatus({
         adminUserId: adminId,
         contentType: contentType,
@@ -14361,7 +14369,7 @@ const ZoptroApiClient = {
         };
       }
 
-      const adminId = (currentUser && currentUser.id) ? currentUser.id : 'u_adm_demo';
+      const adminId = getActiveAdminUserId();
       ZoptroApiClient.saveAdminContentItem({
         adminUserId: adminId,
         contentType: contentType,
@@ -14413,7 +14421,7 @@ const ZoptroApiClient = {
       const lockPill = document.getElementById('adminLockStatusPill');
       if (lockPill) lockPill.innerText = "LockService: Deleting record from Google Sheets...";
 
-      const adminId = (currentUser && currentUser.id) ? currentUser.id : 'u_adm_demo';
+      const adminId = getActiveAdminUserId();
       ZoptroApiClient.deleteAdminContentItem({
         adminUserId: adminId,
         contentType: contentType,
