@@ -598,15 +598,15 @@
   </header>
   <nav class="app-nav" aria-label="Main navigation">
     <div class="nav-inner">
-      <button onclick="returnToLanding()" id="tab-landing" aria-current="page" class="tab-btn bg-[#09293D] text-white border-b-2 border-[#F65800]" title="Return to Home / Landing Page">Home</button>
-      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn">Overview</button>
-      <button onclick="switchTab('dailygk')" id="tab-dailygk" class="tab-btn">Daily knowledge</button>
-      <button onclick="switchTab('pyqp')" id="tab-pyqp" class="tab-btn">Exam practice</button>
-      <button onclick="switchTab('news')" id="tab-news" class="tab-btn">World news</button>
-      <button onclick="switchTab('story')" id="tab-story" class="tab-btn">Story &amp; EQ lab</button>
-      <button onclick="switchTab('vault')" id="tab-vault" class="tab-btn">Rewards</button>
-      <button onclick="setUserRole('parent')" id="tab-parentview" class="tab-btn">Parent space</button>
-      <button onclick="switchTab('admin')" id="tab-admin" class="tab-btn hidden">Admin CMS</button>
+      <button onclick="returnToLanding()" id="tab-landing" aria-current="page" class="tab-btn bg-[#09293D] text-white border-b-2 border-[#F65800]" title="Return to Home">🏠 Home</button>
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn">🎯 My Cockpit</button>
+      <button onclick="switchTab('pyqp')" id="tab-pyqp" class="tab-btn">🏆 Olympiad Arena</button>
+      <button onclick="switchTab('dailygk')" id="tab-dailygk" class="tab-btn">💡 Brain Sparks</button>
+      <button onclick="switchTab('news')" id="tab-news" class="tab-btn">🌍 World News</button>
+      <button onclick="switchTab('story')" id="tab-story" class="tab-btn">📖 Hero Stories</button>
+      <button onclick="switchTab('vault')" id="tab-vault" class="tab-btn">🎁 Treasure Vault</button>
+      <button onclick="setUserRole('parent')" id="tab-parentview" class="tab-btn">👨‍👩‍👧‍👦 Parent Space</button>
+      <button onclick="switchTab('admin')" id="tab-admin" class="tab-btn hidden">⚙️ Admin Studio</button>
     </div>
   </nav>
 
@@ -638,10 +638,10 @@
             </span>
           </div>
           <h1 id="landingHeroTitle" class="text-2xl sm:text-3xl md:text-4xl font-bold font-display text-white tracking-wide">
-            Empowering Young Champions. Focus, Learn &amp; Grow.
+            🌟 Welcome to Zoptro Kids! Focus, Learn &amp; Level Up! 🚀
           </h1>
           <p id="landingHeroSubtitle" class="text-sm md:text-base text-[#D9E6EB] max-w-3xl font-sans leading-relaxed">
-            A unified dual-space mission control platform bridging daily focus sprints, moral reflection, and CBSE/NCERT curriculum mastery with transparent parental oversight and dynamic CMS management.
+            The gamified daily adventure where young champions conquer Olympiads, build powerful habits, explore world discoveries, and earn real Focus Coins!
           </p>
         </div>
       </div>
@@ -780,7 +780,197 @@
     <!-- VIEW 1: MISSION COCKPIT & LIVE SCHEDULE                                   -->
     <!-- ========================================================================= -->
     <section id="view-dashboard" class="tab-view hidden space-y-5">
-      
+
+      <!-- KID ADVENTURE COCKPIT: HERO WELCOME & GAMIFICATION STRIP -->
+      <div class="bg-[#09293D] border-l-4 border-[#F65800] rounded-none p-5 text-white border-2 border-[#09293D] space-y-3 font-sans">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2 flex-wrap gap-1">
+              <span class="bg-[#F65800] text-white text-[11px] font-bold px-2 py-0.5 rounded-none uppercase tracking-wider flex items-center gap-1">
+                <span>⭐</span> STUDENT ADVENTURE DECK
+              </span>
+              <span class="bg-[#1C5682] text-[#D9E6EB] text-[11px] font-bold px-2 py-0.5 rounded-none uppercase tracking-wider" id="adventureKidGradeBadge">
+                Class 8 Benchmark
+              </span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold font-display text-white tracking-wide flex items-center gap-2">
+              <span>🚀</span>
+              <span>Hey <span id="adventureKidName" class="text-[#F9A66E]">Commander</span>! Ready to Explore?</span>
+            </h2>
+            <p class="text-xs text-[#D9E6EB]">
+              Complete daily quests, solve Olympiad puzzles, run focus sprints, and level up your avatar!
+            </p>
+          </div>
+
+          <!-- Quick Gamification Stats Strip -->
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div class="bg-[#1C5682]/40 border border-[#1C5682] px-3 py-2 rounded-none text-center">
+              <span class="text-[10px] text-[#D9E6EB] font-bold uppercase tracking-wider block">Streak</span>
+              <span class="text-sm font-bold text-white" id="adventureStreakDisplay">🔥 3 Days</span>
+            </div>
+            <div class="bg-[#F65800]/20 border border-[#F65800] px-3 py-2 rounded-none text-center">
+              <span class="text-[10px] text-[#F9A66E] font-bold uppercase tracking-wider block">Wallet</span>
+              <span class="text-sm font-bold text-[#F9A66E]" id="adventureCoinsBadge">🪙 <span id="adventureCoinsDisplay">0</span></span>
+            </div>
+            <div class="bg-[#7FBF19]/20 border border-[#7FBF19] px-3 py-2 rounded-none text-center">
+              <span class="text-[10px] text-[#F4F2EA] font-bold uppercase tracking-wider block">Rank</span>
+              <span class="text-sm font-bold text-[#7FBF19]" id="adventureLevelDisplay">⚡ Cadet</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KID ADVENTURE COCKPIT: 6 CHUNKY GAME QUEST TILES -->
+      <div id="studentQuestArena" class="space-y-3 font-sans">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#DED9D3] pb-2">
+          <div class="flex items-center space-x-2">
+            <span class="text-xl">🎮</span>
+            <h3 class="font-display font-bold text-sm sm:text-base text-[#09293D] uppercase tracking-wider">
+              Choose Your Learning Adventure
+            </h3>
+          </div>
+          <span class="text-xs font-bold text-[#F65800] bg-[#FFF0ED] border border-[#F65800] px-2.5 py-0.5 rounded-none">
+            Earn Focus Coins &amp; XP with each quest! 🪙
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          
+          <!-- Quest Tile 1: Olympiad Arena -->
+          <div onclick="switchTab('pyqp')" class="group bg-white border-2 border-[#09293D] border-t-4 border-t-[#F65800] p-4.5 rounded-none hover:border-[#F65800] cursor-pointer transition shadow-none flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold px-2 py-0.5 bg-[#FFF0ED] text-[#F65800] border border-[#F65800] uppercase tracking-wider rounded-none">
+                  ⭐ Math &amp; Reasoning
+                </span>
+                <span class="text-2xl group-hover:scale-110 transition-transform">📐</span>
+              </div>
+              <h4 class="font-display font-bold text-base text-[#09293D] group-hover:text-[#F65800] transition">
+                Olympiad Arena
+              </h4>
+              <p class="text-xs text-[#666D57] leading-relaxed">
+                Battle 35 real competition questions! Logical patterns, math drills &amp; Achievers HOTS challenges.
+              </p>
+            </div>
+            <div class="pt-2 border-t border-[#DED9D3] flex items-center justify-between text-xs font-bold text-[#09293D]">
+              <span class="text-[#F65800] flex items-center gap-1"><span>🪙</span> +15 Coins per paper</span>
+              <span class="group-hover:translate-x-1 transition-transform text-[#F65800]">Enter Arena →</span>
+            </div>
+          </div>
+
+          <!-- Quest Tile 2: Brain Sparks -->
+          <div onclick="switchTab('dailygk')" class="group bg-white border-2 border-[#09293D] border-t-4 border-t-[#1C5682] p-4.5 rounded-none hover:border-[#1C5682] cursor-pointer transition shadow-none flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold px-2 py-0.5 bg-[#E8F1F5] text-[#1C5682] border border-[#1C5682] uppercase tracking-wider rounded-none">
+                  🔬 1-Min Discovery
+                </span>
+                <span class="text-2xl group-hover:scale-110 transition-transform">💡</span>
+              </div>
+              <h4 class="font-display font-bold text-base text-[#09293D] group-hover:text-[#1C5682] transition">
+                Daily Brain Sparks
+              </h4>
+              <p class="text-xs text-[#666D57] leading-relaxed">
+                Discover a fascinating science fact or history secret, then test your wits in a 60-second quiz!
+              </p>
+            </div>
+            <div class="pt-2 border-t border-[#DED9D3] flex items-center justify-between text-xs font-bold text-[#09293D]">
+              <span class="text-[#1C5682] flex items-center gap-1"><span>🪙</span> +10 Coins per quiz</span>
+              <span class="group-hover:translate-x-1 transition-transform text-[#1C5682]">Spark Brain →</span>
+            </div>
+          </div>
+
+          <!-- Quest Tile 3: Junior World News -->
+          <div onclick="switchTab('news')" class="group bg-white border-2 border-[#09293D] border-t-4 border-t-[#666D57] p-4.5 rounded-none hover:border-[#666D57] cursor-pointer transition shadow-none flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold px-2 py-0.5 bg-[#F4F2EA] text-[#666D57] border border-[#666D57] uppercase tracking-wider rounded-none">
+                  🌍 Global Explorer
+                </span>
+                <span class="text-2xl group-hover:scale-110 transition-transform">📰</span>
+              </div>
+              <h4 class="font-display font-bold text-base text-[#09293D] group-hover:text-[#666D57] transition">
+                Discovery Desk
+              </h4>
+              <p class="text-xs text-[#666D57] leading-relaxed">
+                Space missions, wildlife wonders, and inventions decoded for young explorers. Read &amp; test yourself!
+              </p>
+            </div>
+            <div class="pt-2 border-t border-[#DED9D3] flex items-center justify-between text-xs font-bold text-[#09293D]">
+              <span class="text-[#666D57] flex items-center gap-1"><span>🪙</span> +15 Coins per digest</span>
+              <span class="group-hover:translate-x-1 transition-transform text-[#666D57]">Explore News →</span>
+            </div>
+          </div>
+
+          <!-- Quest Tile 4: Hero Stories & EQ Lab -->
+          <div onclick="switchTab('story')" class="group bg-white border-2 border-[#09293D] border-t-4 border-t-[#325B6F] p-4.5 rounded-none hover:border-[#325B6F] cursor-pointer transition shadow-none flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold px-2 py-0.5 bg-[#EDF3F5] text-[#325B6F] border border-[#325B6F] uppercase tracking-wider rounded-none">
+                  📖 Character &amp; Virtues
+                </span>
+                <span class="text-2xl group-hover:scale-110 transition-transform">🎭</span>
+              </div>
+              <h4 class="font-display font-bold text-base text-[#09293D] group-hover:text-[#325B6F] transition">
+                Hero Stories &amp; EQ Lab
+              </h4>
+              <p class="text-xs text-[#666D57] leading-relaxed">
+                Exciting tales of courage, empathy &amp; friendship. Step into tricky moral dilemmas &amp; make your choice!
+              </p>
+            </div>
+            <div class="pt-2 border-t border-[#DED9D3] flex items-center justify-between text-xs font-bold text-[#09293D]">
+              <span class="text-[#325B6F] flex items-center gap-1"><span>🪙</span> +20 Coins per dilemma</span>
+              <span class="group-hover:translate-x-1 transition-transform text-[#325B6F]">Read Stories →</span>
+            </div>
+          </div>
+
+          <!-- Quest Tile 5: Treasure Vault -->
+          <div onclick="switchTab('vault')" class="group bg-white border-2 border-[#09293D] border-t-4 border-t-[#F9A66E] p-4.5 rounded-none hover:border-[#F9A66E] cursor-pointer transition shadow-none flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold px-2 py-0.5 bg-[#FFFBE8] text-[#F65800] border border-[#F9A66E] uppercase tracking-wider rounded-none">
+                  🎁 Rewards &amp; Prizes
+                </span>
+                <span class="text-2xl group-hover:scale-110 transition-transform">🪙</span>
+              </div>
+              <h4 class="font-display font-bold text-base text-[#09293D] group-hover:text-[#F65800] transition">
+                Treasure Vault
+              </h4>
+              <p class="text-xs text-[#666D57] leading-relaxed">
+                Spin the daily mystery wheel, collect rare avatar badges, and redeem your focus coins for awesome rewards!
+              </p>
+            </div>
+            <div class="pt-2 border-t border-[#DED9D3] flex items-center justify-between text-xs font-bold text-[#09293D]">
+              <span class="text-[#F65800] flex items-center gap-1"><span>🎡</span> Daily Spin Ready!</span>
+              <span class="group-hover:translate-x-1 transition-transform text-[#F65800]">Open Vault →</span>
+            </div>
+          </div>
+
+          <!-- Quest Tile 6: Focus Rocket Sprint -->
+          <div onclick="document.querySelector('.sprint-card')?.scrollIntoView({behavior:'smooth'})" class="group bg-white border-2 border-[#09293D] border-t-4 border-t-[#7FBF19] p-4.5 rounded-none hover:border-[#7FBF19] cursor-pointer transition shadow-none flex flex-col justify-between space-y-3">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold px-2 py-0.5 bg-[#F8FFE1] text-[#28540A] border border-[#7FBF19] uppercase tracking-wider rounded-none">
+                  ⏱️ 25-5-20 Rule
+                </span>
+                <span class="text-2xl group-hover:scale-110 transition-transform">🚀</span>
+              </div>
+              <h4 class="font-display font-bold text-base text-[#09293D] group-hover:text-[#28540A] transition">
+                Rocket Focus Sprint
+              </h4>
+              <p class="text-xs text-[#666D57] leading-relaxed">
+                Launch a 25-minute laser focus timer. Zero distractions, high energy, and earn +25 verified Focus Coins!
+              </p>
+            </div>
+            <div class="pt-2 border-t border-[#DED9D3] flex items-center justify-between text-xs font-bold text-[#09293D]">
+              <span class="text-[#28540A] flex items-center gap-1"><span>⚡</span> +25 Coins on finish</span>
+              <span class="group-hover:translate-x-1 transition-transform text-[#28540A]">Start Sprint ↓</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- Live Routine HUD Banner -->
       <div class="bg-[#09293D] border-l-4 border-[#F65800] rounded-none p-6 text-white  relative overflow-hidden">
         <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -9081,6 +9271,19 @@ const ZoptroApiClient = {
 
     function updateGamificationUI() {
       document.getElementById('focusCoinsVal').innerText = focusCoins;
+      const advName = document.getElementById('adventureKidName');
+      if (advName) advName.innerText = (currentUser && currentUser.fullName) ? currentUser.fullName : 'Commander';
+      const advGrade = document.getElementById('adventureKidGradeBadge');
+      if (advGrade) advGrade.innerText = (typeof getActiveStudentGrade === 'function' ? getActiveStudentGrade() : 'Class 8') + ' Benchmark';
+      const advCoins = document.getElementById('adventureCoinsDisplay');
+      if (advCoins) advCoins.innerText = focusCoins;
+      const advStreak = document.getElementById('adventureStreakDisplay');
+      if (advStreak) advStreak.innerText = `🔥 ${currentStreak} Days`;
+      const advLvl = document.getElementById('adventureLevelDisplay');
+      if (advLvl) {
+        const lvlCalc = Math.floor(commanderXP / 250) + 1;
+        advLvl.innerText = `⚡ Level ${lvlCalc} Cadet`;
+      }
       const streakLabel = document.getElementById('streakCounter');
       if(streakLabel) streakLabel.innerText = `${currentStreak} day streak`;
       if (document.getElementById('vaultCoinsDisplay')) {
@@ -15299,15 +15502,15 @@ const ZoptroApiClient = {
         // Shared presentation and keyboard behavior; no authentication or data changes.
     function updatePageHeading(tabId) {
       const pages = {
-        landing:['MISSION CONTROL PORTAL','Empowering Young Champions.','Choose your entry point: Student Learning Space, Parent Space, or Admin Mission Control.'],
-        dashboard:['YOUR DAILY OVERVIEW','Small steps. Real progress.','Make time to focus, build a habit and discover something new.'],
-        dailygk:['DISCOVER & LEARN','A little more curious. Every day.','Explore the daily digest, then put your knowledge into practice.'],
-        pyqp:['PRACTICE WITH PURPOSE','Build confidence, one question at a time.','Choose an exam, explore its syllabus and practise at your pace.'],
-        news:['UNDERSTAND YOUR WORLD','Big stories. Clear explanations.','Read, reflect and check what you have learned.'],
-        story:['READ & REFLECT','Good stories help us grow.','Make time for reading, imagination and everyday empathy.'],
-        vault:['RECOGNISE YOUR PROGRESS','Your effort opens possibilities.','Choose a reward and send a request for your parent to review.'],
-        parentview:['YOUR PARENT SPACE','Support the effort. Celebrate the progress.','Review completed activities, shape routines and guide the next step.'],
-        admin:['ADMIN MISSION CONTROL','Direct curriculum & dynamic CMS.','Manage stories, EQ scenarios, daily knowledge, quizzes, and quests.']
+        landing:['🌟 WELCOME TO ZOPTRO KIDS','Focus, Learn & Level Up! 🚀','Your daily adventure space for Olympiads, brain quests, hero stories & fun rewards.'],
+        dashboard:['🚀 STUDENT ADVENTURE DECK','Hey Champion! Ready to Explore? 🎯','Complete daily quests, solve puzzles, boost your streak & unlock Focus Coins!'],
+        dailygk:['💡 BRAIN SPARKS','Discover Something Awesome Today! 🔬','Learn a fun science or history discovery, then crack the 1-minute quiz.'],
+        pyqp:['🏆 OLYMPIAD ARENA','Battle Real Competition Papers! 📐','Pick an exam paper, practice questions, earn coin bounties & master your grade.'],
+        news:['🌍 DISCOVERY DESK','World News Decoded for Kids! 📰','Cool space missions, wildlife, tech & stories from across the planet.'],
+        story:['📖 HERO STORIES & EQ LAB','Exciting Adventures & Moral Choices! 🎭','Read inspiring tales of courage and make your choice in tricky dilemma quests.'],
+        vault:['🎁 TREASURE VAULT','Spend Your Coins & Claim Rewards! 🪙','Spin the mystery wheel, unlock rare avatar badges, and request fun rewards.'],
+        parentview:['👨‍👩‍👧‍👦 PARENT MISSION HQ','Cheer, Guide & Celebrate Progress! ⭐','1-click approve completed quests, review learning milestones & manage family settings.'],
+        admin:['⚙️ ADMIN LEARNING STUDIO','Curriculum Studio & Question Bank 🛡️','Synthesize CBSE/NCERT curriculum questions, review quizzes, and manage content.']
       };
       const copy = pages[tabId] || pages.dashboard;
       ['pageEyebrow','pageTitle','pageDescription'].forEach((id,i) => { const el=document.getElementById(id); if(el) el.textContent=copy[i]; });
